@@ -2,6 +2,8 @@
 
 TRPGのダンジョン自動生成＋編集ツール（MVP実装）
 
+![Editor](docs/images/editor.png)
+
 ## 概要
 
 React + TypeScript + Vite で構築した、ブラウザ上で動作するダンジョン編集ツールです。
@@ -179,11 +181,37 @@ IndexedDBを扱いやすくするORM。
 
 配置済み部屋やドキュメントを一意に識別するため採用。
 
-## 将来の拡張予定
+## ロードマップ
 
-- [ ] 自動ダンジョン生成アルゴリズム
-- [ ] EncounterTemplate（エンカウンター設定）
-- [ ] モンスター・アイテム配置
-- [ ] マルチフロア対応
-- [ ] Tauri化（デスクトップアプリ）
-- [ ] モンスターデータベース連携
+### Phase1（MVP）
+
+- [x] SVGキャンバス
+
+- [x] ピース配置
+
+- [x] Undo / Redo
+
+- [x] Export / Import
+
+### Phase2
+
+- [ ] コネクター自動接続
+
+- [ ] 自動ダンジョン生成
+
+- [ ] ピース編集
+
+### Phase3
+
+- [ ] EncounterTemplate
+
+- [ ] Monster配置
+
+- [ ] Event配置
+
+### Phase4
+
+- [ ] Tauri版
+
+- [ ] プラグイン対応
+
