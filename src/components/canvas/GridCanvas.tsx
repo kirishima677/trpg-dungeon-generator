@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
@@ -23,25 +23,51 @@ export function GridCanvas({ width, height, children, svgRef }: GridCanvasProps)
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const spaceDown = useRef(false);
 
-  // ── Zoom ──────────────────────────────────────────────────────────────────
-  const onWheel = useCallback(
-    (e: React.WheelEvent<SVGSVGElement>) => {
+  // Keep a ref to the latest view so the wheel handler can read it without
+  // needing to be re-registered every time view changes.
+  const viewRef = useRef(view);
+  useEffect(() => { viewRef.current = view; }, [view]);
+
+  // Internal ref for the SVG element used by the wheel effect.
+  const localRef = useRef<SVGSVGElement | null>(null);
+
+  // Callback ref: populate both the local ref and the forwarded svgRef.
+  const setRefs = useCallback(
+    (node: SVGSVGElement | null) => {
+      localRef.current = node;
+      if (svgRef) svgRef.current = node;
+    },
+    [svgRef]
+  );
+
+  // ── Zoom (non-passive wheel listener) ────────────────────────────────────
+  // React attaches onWheel as a passive listener in modern browsers, which
+  // prevents preventDefault() from working. Register manually with
+  // { passive: false } so we can block the page scroll while zooming.
+  useEffect(() => {
+    const el = localRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      const { zoom, panX, panY } = viewRef.current;
       const scaleFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-      const newZoom = Math.min(4, Math.max(0.25, view.zoom * scaleFactor));
+      const newZoom = Math.min(4, Math.max(0.25, zoom * scaleFactor));
 
       // Zoom toward cursor
-      const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
 
-      const newPanX = cx - (cx - view.panX) * (newZoom / view.zoom);
-      const newPanY = cy - (cy - view.panY) * (newZoom / view.zoom);
+      const newPanX = cx - (cx - panX) * (newZoom / zoom);
+      const newPanY = cy - (cy - panY) * (newZoom / zoom);
 
       setView({ zoom: newZoom, panX: newPanX, panY: newPanY });
-    },
-    [view, setView]
-  );
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [setView]); // setView is stable; viewRef is a ref — no need to re-register
 
   // ── Pan ───────────────────────────────────────────────────────────────────
   const onMouseDown = useCallback(
@@ -84,12 +110,11 @@ export function GridCanvas({ width, height, children, svgRef }: GridCanvasProps)
 
   return (
     <svg
-      ref={svgRef}
+      ref={setRefs}
       width={width}
       height={height}
       style={{ display: 'block', cursor: isPanning.current ? 'grabbing' : 'default', outline: 'none' }}
       tabIndex={0}
-      onWheel={onWheel}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
