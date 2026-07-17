@@ -1,4 +1,5 @@
 import React from 'react';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import type { EditorMode } from '../../store/dungeonStore';
 
@@ -47,7 +48,7 @@ export function Toolbar() {
     selectedRoomId,
     rotateRoom,
     deleteRoom,
-  } = useDungeonStore(s => ({
+  } = useDungeonStore(useShallow(s => ({
     editorMode: s.editorMode,
     setEditorMode: s.setEditorMode,
     setPendingPiece: s.setPendingPiece,
@@ -59,7 +60,7 @@ export function Toolbar() {
     selectedRoomId: s.selectedRoomId,
     rotateRoom: s.rotateRoom,
     deleteRoom: s.deleteRoom,
-  }));
+  })));
 
   const setMode = (mode: EditorMode) => {
     setEditorMode(mode);

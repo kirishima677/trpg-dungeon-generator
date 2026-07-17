@@ -1,4 +1,5 @@
 import React, { useRef, useCallback } from 'react';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
 const GRID_SIZE = 40; // px per cell
@@ -17,7 +18,7 @@ interface GridCanvasProps {
  * - Pan (middle-click drag or space+drag)
  */
 export function GridCanvas({ width, height, children, svgRef }: GridCanvasProps) {
-  const { view, setView } = useDungeonStore(s => ({ view: s.view, setView: s.setView }));
+  const { view, setView } = useDungeonStore(useShallow(s => ({ view: s.view, setView: s.setView })));
   const isPanning = useRef(false);
   const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const spaceDown = useRef(false);

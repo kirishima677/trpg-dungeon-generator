@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
 import type { PlacedRoom, Rotation } from '../../model/types';
 import { getWorldCells } from '../../utils/geometry';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
 const GRID_SIZE = 40;
@@ -17,12 +18,12 @@ interface PiecePlacementGhostProps {
  * - Press R (or scroll wheel over the ghost) to rotate before placing.
  */
 export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
-  const { pendingPiece, view, addRoom, dungeon } = useDungeonStore(s => ({
+  const { pendingPiece, view, addRoom, dungeon } = useDungeonStore(useShallow(s => ({
     pendingPiece: s.pendingPiece,
     view: s.view,
     addRoom: s.addRoom,
     dungeon: s.dungeon,
-  }));
+  })));
 
   const [gridPos, setGridPos] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState<Rotation>(0);

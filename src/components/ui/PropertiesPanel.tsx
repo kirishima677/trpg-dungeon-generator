@@ -1,14 +1,15 @@
 import React from 'react';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import { getWorldConnectors } from '../../utils/geometry';
 
 export function PropertiesPanel() {
-  const { dungeon, selectedRoomId, rotateRoom, deleteRoom } = useDungeonStore(s => ({
+  const { dungeon, selectedRoomId, rotateRoom, deleteRoom } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
     selectedRoomId: s.selectedRoomId,
     rotateRoom: s.rotateRoom,
     deleteRoom: s.deleteRoom,
-  }));
+  })));
 
   const room = selectedRoomId ? dungeon.rooms.find(r => r.id === selectedRoomId) : null;
   if (!room) {

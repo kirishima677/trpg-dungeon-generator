@@ -1,5 +1,6 @@
 import { DEFAULT_PIECES } from '../../model';
 import type { Piece } from '../../model/types';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
 const THUMB_SIZE = 80;
@@ -47,10 +48,10 @@ function PieceThumbnail({ piece }: { piece: Piece }) {
 }
 
 export function PieceSidebar() {
-  const { setPendingPiece, pendingPiece } = useDungeonStore(s => ({
+  const { setPendingPiece, pendingPiece } = useDungeonStore(useShallow(s => ({
     setPendingPiece: s.setPendingPiece,
     pendingPiece: s.pendingPiece,
-  }));
+  })));
 
   const pieces = DEFAULT_PIECES;
 

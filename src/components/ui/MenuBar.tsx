@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import { dungeonRepository } from '../../repository/dungeonRepository';
 import {
@@ -8,11 +9,11 @@ import {
 } from '../../utils/exportImport';
 
 export function MenuBar() {
-  const { dungeon, setDungeon, newDungeon } = useDungeonStore(s => ({
+  const { dungeon, setDungeon, newDungeon } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
     setDungeon: s.setDungeon,
     newDungeon: s.newDungeon,
-  }));
+  })));
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);

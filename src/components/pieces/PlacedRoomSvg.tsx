@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import type { PlacedRoom } from '../../model/types';
 import { getWorldCells, getWorldConnectors } from '../../utils/geometry';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
 const GRID_SIZE = 40; // px per cell — must match GridCanvas
@@ -11,13 +12,13 @@ interface PlacedRoomSvgProps {
 }
 
 export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
-  const { selectRoom, moveRoom, deleteRoom, editorMode } = useDungeonStore(s => ({
+  const { selectRoom, moveRoom, deleteRoom, editorMode } = useDungeonStore(useShallow(s => ({
     selectRoom: s.selectRoom,
     moveRoom: s.moveRoom,
     deleteRoom: s.deleteRoom,
     editorMode: s.editorMode,
-  }));
-  const { view } = useDungeonStore(s => ({ view: s.view }));
+  })));
+  const { view } = useDungeonStore(useShallow(s => ({ view: s.view })));
 
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, rx: 0, ry: 0 });

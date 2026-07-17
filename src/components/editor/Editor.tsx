@@ -6,17 +6,18 @@ import { PieceSidebar } from '../sidebar/PieceSidebar';
 import { Toolbar } from '../toolbar/Toolbar';
 import { MenuBar } from '../ui/MenuBar';
 import { PropertiesPanel } from '../ui/PropertiesPanel';
+import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
 export function Editor() {
-  const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom } = useDungeonStore(s => ({
+  const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
     selectedRoomId: s.selectedRoomId,
     selectRoom: s.selectRoom,
     undo: s.undo,
     redo: s.redo,
     rotateRoom: s.rotateRoom,
-  }));
+  })));
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
