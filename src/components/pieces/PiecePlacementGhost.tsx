@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
-import type { PlacedRoom } from '../../model/types';
+import type { PlacedRoom, Rotation } from '../../model/types';
 import { getWorldCells } from '../../utils/geometry';
 import { useDungeonStore } from '../../store';
 
 const GRID_SIZE = 40;
+const ROTATIONS: Rotation[] = [0, 90, 180, 270];
 
 interface PiecePlacementGhostProps {
   svgRef: React.RefObject<SVGSVGElement | null>;
@@ -12,7 +13,8 @@ interface PiecePlacementGhostProps {
 
 /**
  * Renders a semi-transparent ghost of the pending piece that follows the cursor.
- * Click to commit the placement.
+ * - Click to place.
+ * - Press R (or scroll wheel over the ghost) to rotate before placing.
  */
 export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
   const { pendingPiece, view, addRoom, dungeon } = useDungeonStore(s => ({
@@ -23,7 +25,12 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
   }));
 
   const [gridPos, setGridPos] = useState({ x: 0, y: 0 });
-  const [rotation] = useState<0 | 90 | 180 | 270>(0);
+  const [rotation, setRotation] = useState<Rotation>(0);
+
+  // Reset rotation when a new piece is selected
+  useEffect(() => {
+    setRotation(0);
+  }, [pendingPiece?.id]);
 
   const svgToGrid = useCallback(
     (clientX: number, clientY: number) => {
@@ -39,16 +46,26 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
     [svgRef, view]
   );
 
+  // Track cursor position inside the SVG
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg || !pendingPiece) return;
-
-    const onMove = (e: MouseEvent) => {
-      setGridPos(svgToGrid(e.clientX, e.clientY));
-    };
+    const onMove = (e: MouseEvent) => setGridPos(svgToGrid(e.clientX, e.clientY));
     svg.addEventListener('mousemove', onMove);
     return () => svg.removeEventListener('mousemove', onMove);
   }, [svgRef, pendingPiece, svgToGrid]);
+
+  // R key rotates the ghost
+  useEffect(() => {
+    if (!pendingPiece) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'r' || e.key === 'R') {
+        setRotation(r => ROTATIONS[(ROTATIONS.indexOf(r) + 1) % 4]);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pendingPiece]);
 
   if (!pendingPiece) return null;
 
@@ -62,7 +79,6 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
   };
 
   const cells = getWorldCells(ghostRoom);
-  // Check collision
   const occupied = new Set(
     dungeon.rooms.flatMap(r => getWorldCells(r)).map(c => `${c.x},${c.y}`)
   );
@@ -86,7 +102,10 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
   const strokeColor = hasCollision ? '#dc2626' : '#2563eb';
 
   return (
-    <g onMouseDown={handleClick} style={{ pointerEvents: 'all', cursor: hasCollision ? 'not-allowed' : 'crosshair' }}>
+    <g
+      onMouseDown={handleClick}
+      style={{ pointerEvents: 'all', cursor: hasCollision ? 'not-allowed' : 'crosshair' }}
+    >
       {cells.map(c => (
         <rect
           key={`${c.x}-${c.y}`}
@@ -100,6 +119,18 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
           strokeDasharray="4,2"
         />
       ))}
+      {/* Rotation indicator */}
+      <text
+        x={(Math.min(...cells.map(c => c.x)) + 0.5) * GRID_SIZE}
+        y={(Math.min(...cells.map(c => c.y)) + 0.5) * GRID_SIZE}
+        fontSize={GRID_SIZE * 0.3}
+        fill={strokeColor}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{ pointerEvents: 'none', userSelect: 'none' }}
+      >
+        {rotation > 0 ? `${rotation}°` : ''}
+      </text>
     </g>
   );
 }

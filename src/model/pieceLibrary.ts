@@ -1,13 +1,12 @@
-import { v4 as uuid } from 'uuid';
 import type { Piece } from './types';
 
 /**
  * Built-in piece definitions.
  * All measurements are in grid cells.
+ *
+ * IMPORTANT: Connector IDs must be static strings (not randomly generated) so
+ * that PlacedRoom.connections references survive save/load round-trips.
  */
-
-const mkId = () => uuid();
-
 export const DEFAULT_PIECES: Piece[] = [
   // ── 4×4 Square Room ────────────────────────────────────────────────────────
   {
@@ -18,14 +17,10 @@ export const DEFAULT_PIECES: Piece[] = [
       Array.from({ length: 4 }, (_, col) => ({ x: col, y: row }))
     ).flat(),
     connectors: [
-      // North wall centre
-      { id: mkId(), direction: 'north', width: 1, kind: 'door', position: { x: 1, y: 0 } },
-      // South wall centre
-      { id: mkId(), direction: 'south', width: 1, kind: 'door', position: { x: 1, y: 3 } },
-      // East wall centre
-      { id: mkId(), direction: 'east',  width: 1, kind: 'door', position: { x: 3, y: 1 } },
-      // West wall centre
-      { id: mkId(), direction: 'west',  width: 1, kind: 'door', position: { x: 0, y: 1 } },
+      { id: 'piece-rect-4x4-north', direction: 'north', width: 1, kind: 'door', position: { x: 1, y: 0 } },
+      { id: 'piece-rect-4x4-south', direction: 'south', width: 1, kind: 'door', position: { x: 1, y: 3 } },
+      { id: 'piece-rect-4x4-east',  direction: 'east',  width: 1, kind: 'door', position: { x: 3, y: 1 } },
+      { id: 'piece-rect-4x4-west',  direction: 'west',  width: 1, kind: 'door', position: { x: 0, y: 1 } },
     ],
     tags: ['room', 'square'],
   },
@@ -39,10 +34,10 @@ export const DEFAULT_PIECES: Piece[] = [
       Array.from({ length: 6 }, (_, col) => ({ x: col, y: row }))
     ).flat(),
     connectors: [
-      { id: mkId(), direction: 'north', width: 1, kind: 'door', position: { x: 2, y: 0 } },
-      { id: mkId(), direction: 'south', width: 1, kind: 'door', position: { x: 2, y: 2 } },
-      { id: mkId(), direction: 'east',  width: 1, kind: 'door', position: { x: 5, y: 1 } },
-      { id: mkId(), direction: 'west',  width: 1, kind: 'door', position: { x: 0, y: 1 } },
+      { id: 'piece-rect-3x6-north', direction: 'north', width: 1, kind: 'door', position: { x: 2, y: 0 } },
+      { id: 'piece-rect-3x6-south', direction: 'south', width: 1, kind: 'door', position: { x: 2, y: 2 } },
+      { id: 'piece-rect-3x6-east',  direction: 'east',  width: 1, kind: 'door', position: { x: 5, y: 1 } },
+      { id: 'piece-rect-3x6-west',  direction: 'west',  width: 1, kind: 'door', position: { x: 0, y: 1 } },
     ],
     tags: ['room', 'rectangle'],
   },
@@ -52,17 +47,16 @@ export const DEFAULT_PIECES: Piece[] = [
     id: 'piece-l-shape',
     name: 'L字の部屋',
     shape: 'l-shape',
-    // An L occupying a 4×4 bounding box: left column (4 cells) + bottom row (3 cells, skipping corner)
     cells: [
       { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 0, y: 3 },
-      { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 },
       { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 },
+      { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 },
     ],
     connectors: [
-      { id: mkId(), direction: 'north', width: 1, kind: 'door', position: { x: 0, y: 0 } },
-      { id: mkId(), direction: 'east',  width: 1, kind: 'door', position: { x: 1, y: 1 } },
-      { id: mkId(), direction: 'south', width: 1, kind: 'door', position: { x: 2, y: 3 } },
-      { id: mkId(), direction: 'west',  width: 1, kind: 'door', position: { x: 0, y: 2 } },
+      { id: 'piece-l-shape-north', direction: 'north', width: 1, kind: 'door', position: { x: 0, y: 0 } },
+      { id: 'piece-l-shape-east',  direction: 'east',  width: 1, kind: 'door', position: { x: 1, y: 1 } },
+      { id: 'piece-l-shape-south', direction: 'south', width: 1, kind: 'door', position: { x: 2, y: 3 } },
+      { id: 'piece-l-shape-west',  direction: 'west',  width: 1, kind: 'door', position: { x: 0, y: 2 } },
     ],
     tags: ['room', 'l-shape'],
   },
@@ -76,8 +70,8 @@ export const DEFAULT_PIECES: Piece[] = [
       { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 },
     ],
     connectors: [
-      { id: mkId(), direction: 'west', width: 1, kind: 'open', position: { x: 0, y: 0 } },
-      { id: mkId(), direction: 'east', width: 1, kind: 'open', position: { x: 3, y: 0 } },
+      { id: 'piece-corridor-h4-west', direction: 'west', width: 1, kind: 'open', position: { x: 0, y: 0 } },
+      { id: 'piece-corridor-h4-east', direction: 'east', width: 1, kind: 'open', position: { x: 3, y: 0 } },
     ],
     tags: ['corridor'],
   },
@@ -91,8 +85,8 @@ export const DEFAULT_PIECES: Piece[] = [
       { x: 0, y: 0 }, { x: 1, y: 0 },
     ],
     connectors: [
-      { id: mkId(), direction: 'west', width: 1, kind: 'open', position: { x: 0, y: 0 } },
-      { id: mkId(), direction: 'east', width: 1, kind: 'open', position: { x: 1, y: 0 } },
+      { id: 'piece-corridor-h2-west', direction: 'west', width: 1, kind: 'open', position: { x: 0, y: 0 } },
+      { id: 'piece-corridor-h2-east', direction: 'east', width: 1, kind: 'open', position: { x: 1, y: 0 } },
     ],
     tags: ['corridor'],
   },
