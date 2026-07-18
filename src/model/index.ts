@@ -1,4 +1,5 @@
 export { DEFAULT_PIECES } from './pieceLibrary';
+export { normalizeDungeonDocument } from './normalizeDungeon';
 export type {
   Connector,
   ConnectorDirection,

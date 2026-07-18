@@ -49,6 +49,14 @@ Dexie + IndexedDB を使用してブラウザローカルに保存します。
 JSON形式でエクスポート・インポートが可能です。
 フォーマット識別子 `trpg-dungeon-generator` とスキーマバージョンを含みます。
 
+### Markdown Editor
+- ツールバーの `Markdown` ボタンから別ウィンドウで開く
+- EasyMDE ベースの編集（Edit / Preview / Split）
+- DungeonDocument に紐づく Markdown を Repository 経由で保存
+- 1秒デバウンスの自動保存 + 手動保存
+- `.md` のインポート / エクスポート
+- Preview を使った PDF 出力（ブラウザ印刷）
+
 ### Undo / Redo
 - `Ctrl+Z` で元に戻す（最大50履歴）
 - `Ctrl+Y` または `Ctrl+Shift+Z` でやり直す
@@ -135,6 +143,7 @@ interface DungeonDocument {
   name: string;
   version: string;
   rooms: PlacedRoom[];
+  markdown: string;
   meta: DungeonMeta;
   createdAt: string;
   updatedAt: string;
@@ -214,4 +223,3 @@ IndexedDBを扱いやすくするORM。
 - [ ] Tauri版
 
 - [ ] プラグイン対応
-

@@ -1,0 +1,138 @@
+.markdown-window {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.markdown-window-header {
+  padding: 12px 16px;
+  font-size: 22px;
+  font-weight: 700;
+  background: #ffffff;
+}
+
+.markdown-window-divider {
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.markdown-window-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #ffffff;
+}
+
+.markdown-window-controls button {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.markdown-window-controls button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.markdown-window-spacer {
+  flex: 1;
+}
+
+.markdown-window-status {
+  font-weight: 600;
+}
+
+.markdown-window-message {
+  color: #334155;
+}
+
+.markdown-window-status--saved {
+  color: #16a34a;
+}
+
+.markdown-window-status--saving {
+  color: #2563eb;
+}
+
+.markdown-window-status--unsaved {
+  color: #ea580c;
+}
+
+.markdown-window-status--failed {
+  color: #dc2626;
+}
+
+.markdown-window-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.markdown-window-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.markdown-window-main--edit .markdown-window-pane--editor,
+.markdown-window-main--preview .markdown-window-pane--preview {
+  width: 100%;
+}
+
+.markdown-window-main--split .markdown-window-pane--editor,
+.markdown-window-main--split .markdown-window-pane--preview {
+  width: 50%;
+}
+
+.markdown-window-main--split .markdown-window-pane--preview {
+  border-left: 1px solid #e2e8f0;
+}
+
+.markdown-window-pane--editor .EasyMDEContainer,
+.markdown-window-pane--editor .CodeMirror {
+  height: 100%;
+}
+
+.markdown-preview-body {
+  padding: 20px;
+  line-height: 1.7;
+}
+
+.markdown-window-loading {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+@media print {
+  .markdown-window-header,
+  .markdown-window-controls,
+  .markdown-window-divider,
+  .markdown-window-pane--editor {
+    display: none !important;
+  }
+
+  .markdown-window {
+    background: #fff;
+  }
+
+  .markdown-window-main,
+  .markdown-window-pane--preview {
+    display: block;
+    width: 100%;
+    border: none;
+  }
+
+  .markdown-preview-body {
+    padding: 0;
+  }
+}

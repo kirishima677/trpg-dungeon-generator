@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuid } from 'uuid';
+import { normalizeDungeonDocument } from '../model';
 import type { DungeonDocument, PlacedRoom, Piece, Rotation } from '../model/types';
 import { getWorldCells } from '../utils/geometry';
 import { SCHEMA_VERSION } from '../utils/exportImport';
@@ -65,6 +66,7 @@ function createEmptyDungeon(): DungeonDocument {
     name: '新しいダンジョン',
     version: SCHEMA_VERSION,
     rooms: [],
+    markdown: '',
     meta: { gridSize: 40 },
     createdAt: now,
     updatedAt: now,
@@ -116,7 +118,12 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
 
   // ── Dungeon ───────────────────────────────────────────────────────────────
   setDungeon(dungeon) {
-    set({ dungeon, selectedRoomId: null, undoStack: [], redoStack: [] });
+    set({
+      dungeon: normalizeDungeonDocument(dungeon),
+      selectedRoomId: null,
+      undoStack: [],
+      redoStack: [],
+    });
   },
 
   newDungeon() {
