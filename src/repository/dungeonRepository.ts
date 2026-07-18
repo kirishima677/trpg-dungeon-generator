@@ -14,7 +14,6 @@ export const dungeonRepository = {
       version: normalized.version,
       rooms: normalized.rooms,
       meta: normalized.meta,
-      createdAt: normalized.createdAt,
       updatedAt: normalized.updatedAt,
     });
     if (updated === 0) {
