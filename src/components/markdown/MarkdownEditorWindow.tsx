@@ -100,18 +100,14 @@ export function MarkdownEditorWindow() {
 
     setSaveStatus('saving');
     try {
+      const updatedAt = new Date().toISOString();
+      await dungeonRepository.saveMarkdown(dungeonId, markdown, updatedAt);
+
       const latest = await dungeonRepository.load(dungeonId);
       if (!latest) {
         throw new Error('missing dungeon');
       }
-
-      const next = {
-        ...latest,
-        markdown,
-        updatedAt: new Date().toISOString(),
-      };
-      await dungeonRepository.save(next);
-      setDungeonName(next.name);
+      setDungeonName(latest.name);
       setSavedMarkdown(markdown);
       setSaveStatus('saved');
 
@@ -120,7 +116,7 @@ export function MarkdownEditorWindow() {
         payload: {
           dungeonId,
           markdown,
-          updatedAt: next.updatedAt,
+          updatedAt,
         },
       };
       channelRef.current?.postMessage(event);
