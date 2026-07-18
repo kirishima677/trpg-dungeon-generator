@@ -10,6 +10,7 @@ import './markdownEditorWindow.css';
 
 type ViewMode = 'edit' | 'preview' | 'split';
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'failed';
+const PRINT_WINDOW_CLOSE_TIMEOUT_MS = 60_000;
 
 function statusLabel(status: SaveStatus): string {
   switch (status) {
@@ -30,16 +31,38 @@ function sanitizeFilename(name: string): string {
   return fallback.replace(/[\\/:*?"<>|]/g, '_');
 }
 
-function buildPrintDocumentHtml(title: string, bodyHtml: string): string {
-  const escapedTitle = title
+function escapeHtmlAttribute(value: string): string {
+  return value
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll('\'', '&#39;');
+}
+
+function normalizePrintLang(lang: string): string {
+  if (!/^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i.test(lang)) {
+    return 'en';
+  }
+
+  try {
+    const [canonical] = Intl.getCanonicalLocales(lang);
+    if (canonical) {
+      return canonical;
+    }
+  } catch {
+    return 'en';
+  }
+
+  return lang;
+}
+
+function buildPrintDocumentHtml(title: string, bodyHtml: string, lang: string): string {
+  const escapedTitle = escapeHtmlAttribute(title);
+  const escapedLang = escapeHtmlAttribute(normalizePrintLang(lang));
 
   return `<!doctype html>
-<html lang="ja">
+<html lang="${escapedLang}">
 <head>
   <meta charset="utf-8" />
   <title>${escapedTitle}</title>
@@ -47,7 +70,7 @@ function buildPrintDocumentHtml(title: string, bodyHtml: string): string {
     @page { size: A4; margin: 18mm; }
     html, body { margin: 0; padding: 0; color: #111827; }
     body {
-      font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif;
       line-height: 1.7;
       word-break: break-word;
     }
@@ -212,17 +235,28 @@ export function MarkdownEditorWindow() {
   const handlePrint = () => {
     const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow) {
-      flashMessage('Export PDF failed');
+      flashMessage('Could not open print window');
       return;
     }
+    const lang = document.documentElement.lang || navigator.language || 'en';
 
     printWindow.document.open();
-    printWindow.document.write(buildPrintDocumentHtml(dungeonName, previewHtml));
+    printWindow.document.write(buildPrintDocumentHtml(dungeonName, previewHtml, lang));
     printWindow.document.close();
 
+    const closeWindow = () => {
+      if (!printWindow.closed) {
+        printWindow.close();
+      }
+    };
+
+    const fallbackCloseTimer = window.setTimeout(closeWindow, PRINT_WINDOW_CLOSE_TIMEOUT_MS);
+    printWindow.onafterprint = () => {
+      window.clearTimeout(fallbackCloseTimer);
+      closeWindow();
+    };
     printWindow.focus();
     printWindow.print();
-    printWindow.close();
   };
 
   if (loading) {
