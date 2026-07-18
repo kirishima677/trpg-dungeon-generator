@@ -39,6 +39,7 @@ export function MarkdownEditorWindow() {
   const [markdown, setMarkdown] = useState('');
   const [savedMarkdown, setSavedMarkdown] = useState('');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [mode, setMode] = useState<ViewMode>('edit');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -88,6 +89,11 @@ export function MarkdownEditorWindow() {
       setSaveStatus('unsaved');
     }
   }, [loading, markdown, savedMarkdown, saveStatus]);
+
+  const flashMessage = React.useCallback((message: string) => {
+    setActionMessage(message);
+    window.setTimeout(() => setActionMessage(null), 2500);
+  }, []);
 
   const saveMarkdown = React.useCallback(async () => {
     if (!dungeonId) return;
@@ -146,22 +152,31 @@ export function MarkdownEditorWindow() {
     importFileRef.current?.click();
   };
 
-  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportFileChange = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const text = await file.text();
       setMarkdown(text);
+      flashMessage('Imported markdown');
+    } catch {
+      flashMessage('Import failed');
     } finally {
       if (importFileRef.current) {
         importFileRef.current.value = '';
       }
     }
-  };
+  }, [flashMessage]);
 
   const handlePrint = () => {
     setMode('preview');
-    window.setTimeout(() => window.print(), 0);
+    // Two animation frames ensure React applies the mode switch and the preview
+    // layout is rendered before the browser opens the print dialog.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.print();
+      });
+    });
   };
 
   if (loading) {
@@ -192,6 +207,7 @@ export function MarkdownEditorWindow() {
         <span className={`markdown-window-status markdown-window-status--${saveStatus}`}>
           {statusLabel(saveStatus)}
         </span>
+        {actionMessage && <span className="markdown-window-message">{actionMessage}</span>}
       </div>
 
       <div className="markdown-window-divider" />

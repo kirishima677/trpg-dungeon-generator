@@ -10,13 +10,14 @@ interface MarkdownEasyMDEProps {
 export function MarkdownEasyMDE({ value, onChange }: MarkdownEasyMDEProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const editorRef = useRef<EasyMDE | null>(null);
+  const initialValueRef = useRef(value);
 
   useEffect(() => {
     if (!textareaRef.current) return;
 
     const editor = new EasyMDE({
       element: textareaRef.current,
-      initialValue: value,
+      initialValue: initialValueRef.current,
       spellChecker: false,
       status: false,
       toolbar: [

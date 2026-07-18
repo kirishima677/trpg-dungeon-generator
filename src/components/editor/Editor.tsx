@@ -26,6 +26,11 @@ export function Editor() {
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const currentDungeonIdRef = useRef(dungeon.id);
+
+  useEffect(() => {
+    currentDungeonIdRef.current = dungeon.id;
+  }, [dungeon.id]);
 
   // Canvas size
   const [size, setSize] = React.useState({ w: 800, h: 600 });
@@ -77,7 +82,7 @@ export function Editor() {
     const channel = new BroadcastChannel(MARKDOWN_CHANNEL_NAME);
     channel.onmessage = event => {
       if (!isMarkdownSavedEvent(event.data)) return;
-      if (event.data.payload.dungeonId !== useDungeonStore.getState().dungeon.id) return;
+      if (event.data.payload.dungeonId !== currentDungeonIdRef.current) return;
 
       useDungeonStore.setState(state => ({
         ...state,

@@ -49,6 +49,10 @@
   font-weight: 600;
 }
 
+.markdown-window-message {
+  color: #334155;
+}
+
 .markdown-window-status--saved {
   color: #16a34a;
 }
