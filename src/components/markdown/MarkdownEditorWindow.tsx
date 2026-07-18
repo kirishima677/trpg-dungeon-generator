@@ -114,6 +114,11 @@ export function MarkdownEditorWindow() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const previewHtml = useMemo(() => renderMarkdownToHtml(markdown), [markdown]);
+  const logPdfExport = (...args: unknown[]) => {
+    if (import.meta.env.DEV) {
+      console.log(...args);
+    }
+  };
 
   useEffect(() => {
     channelRef.current = new BroadcastChannel(MARKDOWN_CHANNEL_NAME);
@@ -235,7 +240,7 @@ export function MarkdownEditorWindow() {
 
   const handlePrint = async () => {
     const printWindow = window.open('', '_blank');
-    console.log('PDF export: window opened', printWindow);
+    logPdfExport('PDF export: window opened', printWindow);
     if (!printWindow) {
       flashMessage('Could not open print window. Please allow popups.');
       return;
@@ -244,14 +249,19 @@ export function MarkdownEditorWindow() {
       flashMessage('Could not open print window. Please allow popups.');
       return;
     }
-    console.log('PDF export: markdown length', markdown.length);
-    console.log('PDF export: generated HTML length', previewHtml.length);
+    try {
+      printWindow.opener = null;
+    } catch {
+      // ignore if browser blocks assigning opener
+    }
+    logPdfExport('PDF export: markdown length', markdown.length);
+    logPdfExport('PDF export: generated HTML length', previewHtml.length);
     const lang = document.documentElement.lang || navigator.language || 'en';
 
     printWindow.document.open();
     printWindow.document.write(buildPrintDocumentHtml(dungeonName, previewHtml, lang));
     printWindow.document.close();
-    console.log('PDF export: document written');
+    logPdfExport('PDF export: document written');
 
     const closeWindow = () => {
       if (!printWindow.closed && printWindow !== window) {
@@ -311,11 +321,11 @@ export function MarkdownEditorWindow() {
         // ignore font readiness errors and continue to print
       }
     }
-    console.log('PDF export: fonts ready');
+    logPdfExport('PDF export: fonts ready');
 
     if (printWindow.closed) return;
     printWindow.focus();
-    console.log('PDF export: calling print');
+    logPdfExport('PDF export: calling print');
     printWindow.print();
   };
 
