@@ -11,7 +11,6 @@ import './markdownEditorWindow.css';
 type ViewMode = 'edit' | 'preview' | 'split';
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'failed';
 const PRINT_WINDOW_CLOSE_TIMEOUT_MS = 60_000;
-const PRINT_WINDOW_READY_DELAY_MS = 300;
 const PRINT_WINDOW_READY_TIMEOUT_MS = 5_000;
 
 function statusLabel(status: SaveStatus): string {
@@ -235,7 +234,7 @@ export function MarkdownEditorWindow() {
   }, [flashMessage]);
 
   const handlePrint = async () => {
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow) {
       flashMessage('Could not open print window. Please allow popups.');
       return;
@@ -261,20 +260,42 @@ export function MarkdownEditorWindow() {
       window.clearTimeout(fallbackCloseTimer);
       closeWindow();
     };
-    printWindow.onafterprint = handleAfterPrint;
     printWindow.addEventListener('afterprint', handleAfterPrint, { once: true });
 
     const waitForReady = new Promise<void>((resolve) => {
-      const readyByState = () => {
-        if (printWindow.document.readyState === 'complete') {
-          resolve();
-          return true;
+      let settled = false;
+      let readyTimeout: number | null = null;
+      let loadListenerAttached = false;
+      const settle = () => {
+        if (settled) return;
+        settled = true;
+        if (readyTimeout !== null) {
+          window.clearTimeout(readyTimeout);
         }
-        return false;
+        if (loadListenerAttached) {
+          printWindow.removeEventListener('load', loadHandler);
+        }
+        resolve();
       };
-      if (readyByState()) return;
-      printWindow.addEventListener('load', () => resolve(), { once: true });
-      window.setTimeout(() => resolve(), PRINT_WINDOW_READY_TIMEOUT_MS);
+      const loadHandler = () => {
+        settle();
+      };
+      readyTimeout = window.setTimeout(() => {
+        settle();
+      }, PRINT_WINDOW_READY_TIMEOUT_MS);
+
+      if (printWindow.document.readyState === 'complete') {
+        settle();
+        return;
+      }
+
+      loadListenerAttached = true;
+      printWindow.addEventListener('load', loadHandler, { once: true });
+
+      const readyStateAfterListener = String(printWindow.document.readyState);
+      if (readyStateAfterListener === 'complete') {
+        settle();
+      }
     });
 
     await waitForReady;
@@ -287,11 +308,9 @@ export function MarkdownEditorWindow() {
       }
     }
 
-    window.setTimeout(() => {
-      if (printWindow.closed) return;
-      printWindow.focus();
-      printWindow.print();
-    }, PRINT_WINDOW_READY_DELAY_MS);
+    if (printWindow.closed) return;
+    printWindow.focus();
+    printWindow.print();
   };
 
   if (loading) {
