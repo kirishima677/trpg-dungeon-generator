@@ -19,6 +19,7 @@ export function MarkdownEasyMDE({ value, onChange }: MarkdownEasyMDEProps) {
       element: textareaRef.current,
       initialValue: initialValueRef.current,
       spellChecker: false,
+      sideBySideFullscreen: false,
       status: false,
       toolbar: [
         'bold',

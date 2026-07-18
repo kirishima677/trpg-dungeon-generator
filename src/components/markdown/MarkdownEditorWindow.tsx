@@ -30,6 +30,51 @@ function sanitizeFilename(name: string): string {
   return fallback.replace(/[\\/:*?"<>|]/g, '_');
 }
 
+function buildPrintDocumentHtml(title: string, bodyHtml: string): string {
+  const escapedTitle = title
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('\'', '&#39;');
+
+  return `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapedTitle}</title>
+  <style>
+    @page { size: A4; margin: 18mm; }
+    html, body { margin: 0; padding: 0; color: #111827; }
+    body {
+      font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif;
+      line-height: 1.7;
+      word-break: break-word;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      break-after: avoid-page;
+      page-break-after: avoid;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    pre, table {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+  </style>
+</head>
+<body>${bodyHtml}</body>
+</html>`;
+}
+
 export function MarkdownEditorWindow() {
   const importFileRef = useRef<HTMLInputElement | null>(null);
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -165,14 +210,19 @@ export function MarkdownEditorWindow() {
   }, [flashMessage]);
 
   const handlePrint = () => {
-    setMode('preview');
-    // Two animation frames ensure React applies the mode switch and the preview
-    // layout is rendered before the browser opens the print dialog.
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        window.print();
-      });
-    });
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) {
+      flashMessage('Export PDF failed');
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(buildPrintDocumentHtml(dungeonName, previewHtml));
+    printWindow.document.close();
+
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
 
   if (loading) {
