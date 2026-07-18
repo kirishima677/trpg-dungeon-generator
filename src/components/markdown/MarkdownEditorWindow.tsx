@@ -10,7 +10,7 @@ import './markdownEditorWindow.css';
 
 type ViewMode = 'edit' | 'preview' | 'split';
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'failed';
-const PRINT_WINDOW_CLOSE_TIMEOUT_MS = 60_000;
+const PRINT_BLOB_URL_REVOKE_TIMEOUT_MS = 60_000;
 const PRINT_WINDOW_READY_TIMEOUT_MS = 5_000;
 
 function statusLabel(status: SaveStatus): string {
@@ -239,13 +239,22 @@ export function MarkdownEditorWindow() {
   }, [flashMessage]);
 
   const handlePrint = async () => {
-    const printWindow = window.open('', '_blank');
+    const lang = document.documentElement.lang || navigator.language || 'en';
+    const printHtml = buildPrintDocumentHtml(dungeonName, previewHtml, lang);
+    logPdfExport('PDF export: markdown length', markdown.length);
+    logPdfExport('PDF export: print document HTML length', printHtml.length);
+
+    const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const printWindow = window.open(blobUrl, '_blank');
     logPdfExport('PDF export: window opened', printWindow);
     if (!printWindow) {
+      URL.revokeObjectURL(blobUrl);
       flashMessage('Could not open print window. Please allow popups.');
       return;
     }
     if (printWindow === window) {
+      URL.revokeObjectURL(blobUrl);
       flashMessage('Could not open print window. Please allow popups.');
       return;
     }
@@ -254,14 +263,14 @@ export function MarkdownEditorWindow() {
     } catch {
       // ignore if browser blocks assigning opener
     }
-    logPdfExport('PDF export: markdown length', markdown.length);
-    logPdfExport('PDF export: generated HTML length', previewHtml.length);
-    const lang = document.documentElement.lang || navigator.language || 'en';
+    logPdfExport('PDF export: print window opened with content');
 
-    printWindow.document.open();
-    printWindow.document.write(buildPrintDocumentHtml(dungeonName, previewHtml, lang));
-    printWindow.document.close();
-    logPdfExport('PDF export: document written');
+    let blobUrlRevoked = false;
+    const revokeBlobUrl = () => {
+      if (blobUrlRevoked) return;
+      blobUrlRevoked = true;
+      URL.revokeObjectURL(blobUrl);
+    };
 
     const closeWindow = () => {
       if (!printWindow.closed && printWindow !== window) {
@@ -269,12 +278,14 @@ export function MarkdownEditorWindow() {
       }
     };
 
-    const fallbackCloseTimer = window.setTimeout(closeWindow, PRINT_WINDOW_CLOSE_TIMEOUT_MS);
+    const fallbackRevokeTimer = window.setTimeout(revokeBlobUrl, PRINT_BLOB_URL_REVOKE_TIMEOUT_MS);
     const handleAfterPrint = () => {
-      window.clearTimeout(fallbackCloseTimer);
+      window.clearTimeout(fallbackRevokeTimer);
       closeWindow();
+      revokeBlobUrl();
     };
     printWindow.addEventListener('afterprint', handleAfterPrint, { once: true });
+    printWindow.addEventListener('pagehide', revokeBlobUrl, { once: true });
 
     const waitForReady = new Promise<void>((resolve) => {
       let settled = false;
@@ -323,7 +334,11 @@ export function MarkdownEditorWindow() {
     }
     logPdfExport('PDF export: fonts ready');
 
-    if (printWindow.closed) return;
+    if (printWindow.closed) {
+      window.clearTimeout(fallbackRevokeTimer);
+      revokeBlobUrl();
+      return;
+    }
     printWindow.focus();
     logPdfExport('PDF export: calling print');
     printWindow.print();
