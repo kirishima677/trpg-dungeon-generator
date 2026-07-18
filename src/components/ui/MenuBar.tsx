@@ -27,10 +27,7 @@ export function MenuBar() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await dungeonRepository.saveMainEditorSnapshot({
-        ...dungeon,
-        updatedAt: new Date().toISOString(),
-      });
+      await dungeonRepository.saveMainEditorSnapshot(dungeon);
       flash('保存しました ✓');
     } catch {
       flash('保存に失敗しました ✗');

@@ -14,7 +14,6 @@ export const dungeonRepository = {
       version: normalized.version,
       rooms: normalized.rooms,
       meta: normalized.meta,
-      updatedAt: normalized.updatedAt,
     });
     if (updated === 0) {
       await db.dungeons.put(normalized);
@@ -26,7 +25,7 @@ export const dungeonRepository = {
     if (updated === 0) {
       const existing = await db.dungeons.get(id);
       if (!existing) {
-        throw new Error(`Cannot save markdown: dungeon with id ${id} not found`);
+        throw new Error(`Cannot save markdown: dungeon with id ${id} not found. The dungeon may have been deleted.`);
       }
       await db.dungeons.put(normalizeDungeonDocument({
         ...existing,
