@@ -234,7 +234,8 @@ export function MarkdownEditorWindow() {
   }, [flashMessage]);
 
   const handlePrint = async () => {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    const printWindow = window.open('', '_blank');
+    console.log('PDF export: window opened', printWindow);
     if (!printWindow) {
       flashMessage('Could not open print window. Please allow popups.');
       return;
@@ -243,11 +244,14 @@ export function MarkdownEditorWindow() {
       flashMessage('Could not open print window. Please allow popups.');
       return;
     }
+    console.log('PDF export: markdown length', markdown.length);
+    console.log('PDF export: generated HTML length', previewHtml.length);
     const lang = document.documentElement.lang || navigator.language || 'en';
 
     printWindow.document.open();
     printWindow.document.write(buildPrintDocumentHtml(dungeonName, previewHtml, lang));
     printWindow.document.close();
+    console.log('PDF export: document written');
 
     const closeWindow = () => {
       if (!printWindow.closed && printWindow !== window) {
@@ -307,9 +311,11 @@ export function MarkdownEditorWindow() {
         // ignore font readiness errors and continue to print
       }
     }
+    console.log('PDF export: fonts ready');
 
     if (printWindow.closed) return;
     printWindow.focus();
+    console.log('PDF export: calling print');
     printWindow.print();
   };
 
