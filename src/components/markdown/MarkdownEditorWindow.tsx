@@ -11,6 +11,8 @@ import './markdownEditorWindow.css';
 type ViewMode = 'edit' | 'preview' | 'split';
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'failed';
 const PRINT_WINDOW_CLOSE_TIMEOUT_MS = 60_000;
+const PRINT_WINDOW_READY_DELAY_MS = 300;
+const PRINT_WINDOW_READY_TIMEOUT_MS = 5_000;
 
 function statusLabel(status: SaveStatus): string {
   switch (status) {
@@ -232,10 +234,14 @@ export function MarkdownEditorWindow() {
     }
   }, [flashMessage]);
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+  const handlePrint = async () => {
+    const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      flashMessage('Could not open print window');
+      flashMessage('Could not open print window. Please allow popups.');
+      return;
+    }
+    if (printWindow === window) {
+      flashMessage('Could not open print window. Please allow popups.');
       return;
     }
     const lang = document.documentElement.lang || navigator.language || 'en';
@@ -245,18 +251,47 @@ export function MarkdownEditorWindow() {
     printWindow.document.close();
 
     const closeWindow = () => {
-      if (!printWindow.closed) {
+      if (!printWindow.closed && printWindow !== window) {
         printWindow.close();
       }
     };
 
     const fallbackCloseTimer = window.setTimeout(closeWindow, PRINT_WINDOW_CLOSE_TIMEOUT_MS);
-    printWindow.onafterprint = () => {
+    const handleAfterPrint = () => {
       window.clearTimeout(fallbackCloseTimer);
       closeWindow();
     };
-    printWindow.focus();
-    printWindow.print();
+    printWindow.onafterprint = handleAfterPrint;
+    printWindow.addEventListener('afterprint', handleAfterPrint, { once: true });
+
+    const waitForReady = new Promise<void>((resolve) => {
+      const readyByState = () => {
+        if (printWindow.document.readyState === 'complete') {
+          resolve();
+          return true;
+        }
+        return false;
+      };
+      if (readyByState()) return;
+      printWindow.addEventListener('load', () => resolve(), { once: true });
+      window.setTimeout(() => resolve(), PRINT_WINDOW_READY_TIMEOUT_MS);
+    });
+
+    await waitForReady;
+
+    if ('fonts' in printWindow.document) {
+      try {
+        await printWindow.document.fonts.ready;
+      } catch {
+        // ignore font readiness errors and continue to print
+      }
+    }
+
+    window.setTimeout(() => {
+      if (printWindow.closed) return;
+      printWindow.focus();
+      printWindow.print();
+    }, PRINT_WINDOW_READY_DELAY_MS);
   };
 
   if (loading) {
