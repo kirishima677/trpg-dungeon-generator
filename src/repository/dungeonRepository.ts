@@ -27,7 +27,7 @@ export const dungeonRepository = {
     if (updated === 0) {
       const existing = await db.dungeons.get(id);
       if (!existing) {
-        throw new Error('missing dungeon');
+        throw new Error(`Cannot save markdown: dungeon with id ${id} not found`);
       }
       await db.dungeons.put(normalizeDungeonDocument({
         ...existing,

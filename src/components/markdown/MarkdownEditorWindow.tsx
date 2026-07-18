@@ -105,7 +105,7 @@ export function MarkdownEditorWindow() {
 
       const latest = await dungeonRepository.load(dungeonId);
       if (!latest) {
-        throw new Error('missing dungeon');
+        throw new Error(`Failed to load dungeon after save: dungeon with id ${dungeonId} not found`);
       }
       setDungeonName(latest.name);
       setSavedMarkdown(markdown);
