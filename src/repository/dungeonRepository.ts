@@ -1,17 +1,20 @@
 import { db } from '../db';
+import { normalizeDungeonDocument } from '../model';
 import type { DungeonDocument } from '../model/types';
 
 export const dungeonRepository = {
   async save(dungeon: DungeonDocument): Promise<void> {
-    await db.dungeons.put(dungeon);
+    await db.dungeons.put(normalizeDungeonDocument(dungeon));
   },
 
   async load(id: string): Promise<DungeonDocument | undefined> {
-    return db.dungeons.get(id);
+    const dungeon = await db.dungeons.get(id);
+    return dungeon ? normalizeDungeonDocument(dungeon) : undefined;
   },
 
   async list(): Promise<DungeonDocument[]> {
-    return db.dungeons.orderBy('updatedAt').reverse().toArray();
+    const dungeons = await db.dungeons.orderBy('updatedAt').reverse().toArray();
+    return dungeons.map(normalizeDungeonDocument);
   },
 
   async delete(id: string): Promise<void> {
@@ -19,7 +22,7 @@ export const dungeonRepository = {
   },
 
   async saveAll(dungeons: DungeonDocument[]): Promise<void> {
-    await db.dungeons.bulkPut(dungeons);
+    await db.dungeons.bulkPut(dungeons.map(normalizeDungeonDocument));
   },
 };
 

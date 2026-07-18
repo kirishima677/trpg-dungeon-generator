@@ -8,6 +8,11 @@ import { MenuBar } from '../ui/MenuBar';
 import { PropertiesPanel } from '../ui/PropertiesPanel';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
+import {
+  MARKDOWN_CHANNEL_NAME,
+  isMarkdownSavedEvent,
+} from '../../editor/markdown/events';
+import { openMarkdownEditorWindow } from '../../editor/markdown/markdownWindow';
 
 export function Editor() {
   const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom } = useDungeonStore(useShallow(s => ({
@@ -64,13 +69,38 @@ export function Editor() {
     [selectRoom]
   );
 
+  const handleOpenMarkdown = useCallback(() => {
+    openMarkdownEditorWindow(dungeon.id);
+  }, [dungeon.id]);
+
+  useEffect(() => {
+    const channel = new BroadcastChannel(MARKDOWN_CHANNEL_NAME);
+    channel.onmessage = event => {
+      if (!isMarkdownSavedEvent(event.data)) return;
+      if (event.data.payload.dungeonId !== useDungeonStore.getState().dungeon.id) return;
+
+      useDungeonStore.setState(state => ({
+        ...state,
+        dungeon: {
+          ...state.dungeon,
+          markdown: event.data.payload.markdown,
+          updatedAt: event.data.payload.updatedAt,
+        },
+      }));
+    };
+
+    return () => {
+      channel.close();
+    };
+  }, []);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Menu bar */}
       <MenuBar />
 
       {/* Toolbar */}
-      <Toolbar />
+      <Toolbar onOpenMarkdown={handleOpenMarkdown} />
 
       {/* Main layout */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>

@@ -35,7 +35,11 @@ function ToolButton({ active, onClick, title, children }: ToolButtonProps) {
   );
 }
 
-export function Toolbar() {
+interface ToolbarProps {
+  onOpenMarkdown: () => void;
+}
+
+export function Toolbar({ onOpenMarkdown }: ToolbarProps) {
   const {
     editorMode,
     setEditorMode,
@@ -124,6 +128,22 @@ export function Toolbar() {
       <ToolButton active={false} onClick={resetView} title="表示をリセット">
         🏠
       </ToolButton>
+
+      <button
+        onClick={onOpenMarkdown}
+        style={{
+          marginLeft: 8,
+          border: '1px solid #cbd5e1',
+          borderRadius: 8,
+          background: '#f8fafc',
+          color: '#0f172a',
+          padding: '8px 12px',
+          cursor: 'pointer',
+          fontWeight: 600,
+        }}
+      >
+        Markdown
+      </button>
     </div>
   );
 }

@@ -71,6 +71,7 @@ export interface DungeonDocument {
   /** Semantic version string, e.g. "1.0.0" */
   version: string;
   rooms: PlacedRoom[];
+  markdown: string;
   meta: DungeonMeta;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
