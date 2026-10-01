@@ -3,6 +3,7 @@ import type { PlacedRoom } from '../../model/types';
 import { getWorldCells, getWorldConnectors } from '../../utils/geometry';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
+import { connectorPoint } from '../../editor/connectors/connectionGeometry';
 
 const GRID_SIZE = 40; // px per cell — must match GridCanvas
 
@@ -29,6 +30,7 @@ export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0 || editorMode === 'place' || editorMode === 'connect') return;
       if (editorMode === 'delete') {
         deleteRoom(room.id);
         return;
@@ -120,9 +122,8 @@ export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
       })()}
 
       {/* Connectors */}
-      {connectors.map(con => {
-        const cx = con.worldPosition.x * GRID_SIZE + GRID_SIZE / 2;
-        const cy = con.worldPosition.y * GRID_SIZE + GRID_SIZE / 2;
+      {editorMode !== 'connect' && connectors.map(con => {
+        const point = connectorPoint(con);
 
         const conColor =
           con.kind === 'door'   ? '#f59e0b' :
@@ -130,19 +131,11 @@ export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
           con.kind === 'locked' ? '#dc2626' :
           '#10b981';
 
-        // Small arrow/chevron indicating direction
-        const arrowOffset = GRID_SIZE * 0.35;
-        let ax = cx, ay = cy;
-        if (con.worldDirection === 'north') ay -= arrowOffset;
-        if (con.worldDirection === 'south') ay += arrowOffset;
-        if (con.worldDirection === 'east')  ax += arrowOffset;
-        if (con.worldDirection === 'west')  ax -= arrowOffset;
-
         return (
           <circle
             key={con.id}
-            cx={ax}
-            cy={ay}
+            cx={point.x * GRID_SIZE}
+            cy={point.y * GRID_SIZE}
             r={GRID_SIZE * 0.12}
             fill={conColor}
             stroke="white"

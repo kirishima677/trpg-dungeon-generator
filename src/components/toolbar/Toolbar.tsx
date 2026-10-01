@@ -1,7 +1,7 @@
 import React from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
-import type { EditorMode } from '../../store/dungeonStore';
+import type { ConnectionType } from '../../model/types';
 
 interface ToolButtonProps {
   active: boolean;
@@ -43,7 +43,10 @@ export function Toolbar({ onOpenMarkdown }: ToolbarProps) {
   const {
     editorMode,
     setEditorMode,
-    setPendingPiece,
+    connectionType,
+    setConnectionType,
+    pendingConnector,
+    cancelConnection,
     undo,
     redo,
     undoStack,
@@ -55,7 +58,10 @@ export function Toolbar({ onOpenMarkdown }: ToolbarProps) {
   } = useDungeonStore(useShallow(s => ({
     editorMode: s.editorMode,
     setEditorMode: s.setEditorMode,
-    setPendingPiece: s.setPendingPiece,
+    connectionType: s.connectionType,
+    setConnectionType: s.setConnectionType,
+    pendingConnector: s.pendingConnector,
+    cancelConnection: s.cancelConnection,
     undo: s.undo,
     redo: s.redo,
     undoStack: s.undoStack,
@@ -65,11 +71,6 @@ export function Toolbar({ onOpenMarkdown }: ToolbarProps) {
     rotateRoom: s.rotateRoom,
     deleteRoom: s.deleteRoom,
   })));
-
-  const setMode = (mode: EditorMode) => {
-    setEditorMode(mode);
-    if (mode !== 'place') setPendingPiece(null);
-  };
 
   return (
     <div
@@ -84,12 +85,31 @@ export function Toolbar({ onOpenMarkdown }: ToolbarProps) {
       }}
     >
       {/* Mode buttons */}
-      <ToolButton active={editorMode === 'select'} onClick={() => setMode('select')} title="選択 (V)">
+      <ToolButton active={editorMode === 'select'} onClick={() => setEditorMode('select')} title="選択 (V)">
         ↖
       </ToolButton>
-      <ToolButton active={editorMode === 'delete'} onClick={() => setMode('delete')} title="削除 (D)">
+      <ToolButton active={editorMode === 'connect'} onClick={() => setEditorMode('connect')} title="接続 (C)">
+        🔗
+      </ToolButton>
+      <ToolButton active={editorMode === 'delete'} onClick={() => setEditorMode('delete')} title="削除 (D)">
         🗑
       </ToolButton>
+
+      {editorMode === 'connect' && (
+        <>
+          <select aria-label="新しい接続の種類" value={connectionType}
+            onChange={e => setConnectionType(e.target.value as ConnectionType)}>
+            <option value="corridor">通路</option>
+            <option value="door">ドア</option>
+            <option value="stairs">階段</option>
+            <option value="secret">隠し通路</option>
+          </select>
+          <span role="status" style={{ fontSize: 12, color: '#475569', margin: '0 6px' }}>
+            {pendingConnector ? '別の部屋の白い接続点を選択' : '白い接続点を2つ選択（青: 選択中／灰: 接続済み）'}
+          </span>
+          {pendingConnector && <button onClick={cancelConnection}>キャンセル (Esc)</button>}
+        </>
+      )}
 
       <div style={{ width: 1, height: 32, background: '#e2e8f0', margin: '0 4px' }} />
 
