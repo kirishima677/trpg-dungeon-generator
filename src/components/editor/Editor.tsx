@@ -2,6 +2,8 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import { GridCanvas } from '../canvas/GridCanvas';
 import { PlacedRoomSvg } from '../pieces/PlacedRoomSvg';
 import { PiecePlacementGhost } from '../pieces/PiecePlacementGhost';
+import { ConnectionRenderer } from '../connections/ConnectionRenderer';
+import { ConnectorPoints } from '../connections/ConnectorPoints';
 import { PieceSidebar } from '../sidebar/PieceSidebar';
 import { Toolbar } from '../toolbar/Toolbar';
 import { MenuBar } from '../ui/MenuBar';
@@ -15,13 +17,21 @@ import {
 import { openMarkdownEditorWindow } from '../../editor/markdown/markdownWindow';
 
 export function Editor() {
-  const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom } = useDungeonStore(useShallow(s => ({
+  const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom,
+    selectedConnectionId, selectConnection, deleteConnection, deleteRoom, cancelConnection, setEditorMode, editorMode } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
     selectedRoomId: s.selectedRoomId,
     selectRoom: s.selectRoom,
     undo: s.undo,
     redo: s.redo,
     rotateRoom: s.rotateRoom,
+    selectedConnectionId: s.selectedConnectionId,
+    selectConnection: s.selectConnection,
+    deleteConnection: s.deleteConnection,
+    deleteRoom: s.deleteRoom,
+    cancelConnection: s.cancelConnection,
+    setEditorMode: s.setEditorMode,
+    editorMode: s.editorMode,
   })));
 
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -49,19 +59,29 @@ export function Editor() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = document.activeElement?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+        || (document.activeElement as HTMLElement | null)?.isContentEditable) return;
 
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
-        e.preventDefault(); redo();
+      const key = e.key.toLowerCase();
+      if (e.ctrlKey || e.metaKey) {
+        if (key === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
+        if (key === 'y') { e.preventDefault(); redo(); }
+        return;
       }
-      if (e.key === 'r' || e.key === 'R') {
-        if (selectedRoomId) rotateRoom(selectedRoomId);
+      if (key === 'r' && editorMode === 'select' && selectedRoomId) rotateRoom(selectedRoomId);
+      if (key === 'v') setEditorMode('select');
+      if (key === 'c') setEditorMode('connect');
+      if (key === 'd') setEditorMode('delete');
+      if (e.key === 'Escape') { cancelConnection(); selectConnection(null); selectRoom(null); }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedConnectionId) { e.preventDefault(); deleteConnection(selectedConnectionId); }
+        else if (selectedRoomId) { e.preventDefault(); deleteRoom(selectedRoomId); }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [undo, redo, selectedRoomId, rotateRoom]);
+  }, [undo, redo, selectedRoomId, rotateRoom, selectedConnectionId, selectConnection,
+    deleteConnection, deleteRoom, cancelConnection, setEditorMode, selectRoom, editorMode]);
 
   const onCanvasClick = useCallback(
     (e: React.MouseEvent) => {
@@ -69,9 +89,10 @@ export function Editor() {
       // Deselect when clicking on grid background (the pattern rect)
       if (target.tagName === 'rect' && target.getAttribute('fill')?.startsWith('url')) {
         selectRoom(null);
+        selectConnection(null);
       }
     },
-    [selectRoom]
+    [selectRoom, selectConnection]
   );
 
   const handleOpenMarkdown = useCallback(() => {
@@ -127,6 +148,9 @@ export function Editor() {
                 isSelected={room.id === selectedRoomId}
               />
             ))}
+
+            <ConnectionRenderer />
+            <ConnectorPoints />
 
             {/* Ghost for piece placement */}
             <PiecePlacementGhost svgRef={svgRef} />

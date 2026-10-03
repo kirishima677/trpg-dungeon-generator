@@ -51,11 +51,23 @@ export interface PlacedRoom {
   /** Canvas position in grid coordinates (top-left cell of the bounding box) */
   position: { x: number; y: number };
   rotation: Rotation;
-  /**
-   * Map of connector id -> { roomId, connectorId } of the target.
-   * Only populated when two connectors are explicitly joined.
-   */
-  connections: Record<string, { roomId: string; connectorId: string }>;
+}
+
+// Logical references only; display coordinates are derived from the rooms.
+export type ConnectionType = 'corridor' | 'door' | 'stairs' | 'secret';
+
+export interface ConnectorEndpoint {
+  roomId: string;
+  connectorId: string;
+}
+
+export interface Connection {
+  id: string;
+  fromRoomId: string;
+  fromConnectorId: string;
+  toRoomId: string;
+  toConnectorId: string;
+  type: ConnectionType;
 }
 
 // ─── DungeonDocument ─────────────────────────────────────────────────────────
@@ -71,6 +83,7 @@ export interface DungeonDocument {
   /** Semantic version string, e.g. "1.0.0" */
   version: string;
   rooms: PlacedRoom[];
+  connections: Connection[];
   markdown: string;
   meta: DungeonMeta;
   createdAt: string; // ISO 8601

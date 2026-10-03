@@ -4,18 +4,42 @@ import { useDungeonStore } from '../../store';
 import { getWorldConnectors } from '../../utils/geometry';
 
 export function PropertiesPanel() {
-  const { dungeon, selectedRoomId, rotateRoom, deleteRoom } = useDungeonStore(useShallow(s => ({
+  const { dungeon, selectedRoomId, rotateRoom, deleteRoom, selectedConnectionId, deleteConnection } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
     selectedRoomId: s.selectedRoomId,
     rotateRoom: s.rotateRoom,
     deleteRoom: s.deleteRoom,
+    selectedConnectionId: s.selectedConnectionId,
+    deleteConnection: s.deleteConnection,
   })));
+
+  const connection = dungeon.connections.find(c => c.id === selectedConnectionId);
+  if (connection) {
+    const endpointLabel = (roomId: string, connectorId: string) => {
+      const index = dungeon.rooms.findIndex(r => r.id === roomId);
+      const room = dungeon.rooms[index];
+      const connector = room && getWorldConnectors(room).find(c => c.id === connectorId);
+      return `部屋${index + 1} ${room?.piece.name ?? roomId} / ${connector?.worldDirection ?? connectorId}`;
+    };
+    return (
+      <div style={panelStyle}>
+        <p style={{ fontWeight: 700, marginBottom: 8 }}>接続線</p>
+        <p style={{ fontSize: 12 }}>種類: {connection.type}</p>
+        <p style={{ fontSize: 12, margin: '8px 0' }}>{endpointLabel(connection.fromRoomId, connection.fromConnectorId)}</p>
+        <p style={{ fontSize: 12, margin: '8px 0' }}>↔ {endpointLabel(connection.toRoomId, connection.toConnectorId)}</p>
+        <button onClick={() => deleteConnection(connection.id)}
+          style={{ ...actionBtn, width: '100%', background: '#fee2e2', color: '#dc2626' }}>
+          接続を削除
+        </button>
+      </div>
+    );
+  }
 
   const room = selectedRoomId ? dungeon.rooms.find(r => r.id === selectedRoomId) : null;
   if (!room) {
     return (
       <div style={panelStyle}>
-        <p style={{ color: '#94a3b8', fontSize: 12 }}>部屋を選択してください</p>
+        <p style={{ color: '#94a3b8', fontSize: 12 }}>部屋または接続線を選択してください</p>
       </div>
     );
   }

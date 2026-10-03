@@ -76,7 +76,6 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
     piece: pendingPiece,
     position: gridPos,
     rotation,
-    connections: {},
   };
 
   const cells = getWorldCells(ghostRoom);
@@ -94,7 +93,6 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
       piece: pendingPiece,
       position: gridPos,
       rotation,
-      connections: {},
     };
     addRoom(newRoom);
   };

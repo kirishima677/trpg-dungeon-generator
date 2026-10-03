@@ -36,7 +36,23 @@ React + TypeScript + Vite で構築した、ブラウザ上で動作するダン
 - **幅**: グリッドセル単位
 - **種類**: open / door / secret / locked
 
-方向・幅・種類が一致するコネクター同士のみ接続できます。
+### 手動接続（コネクターシステム MVP）
+
+- ツールバーの 🔗 ボタン、または `C` キーで接続モードへ切り替える
+- 異なる部屋の白い接続ポイントを2つクリックして接続を作成する
+- ポイントは白が未接続、青が選択中、灰色が接続済み。1ポイントにつき1接続
+- 同じポイントの再クリック、`Esc`、キャンセルボタンで始点の選択を解除する
+- 新しい接続の種類は通路 / ドア / 階段 / 隠し通路から選択する
+- 線を選択して右パネルの「接続を削除」、`Delete` / `Backspace`、または削除モードで線をクリックすると削除する
+- 接続の作成・削除、部屋削除に伴う接続削除は Undo / Redo に対応する
+- `V` キーで選択モードへ戻り、部屋を移動・回転すると線が追従する
+
+接続は `DungeonDocument.connections` に部屋ID・固定コネクターID・種類を保存します。
+直線の始点・終点は部屋の現在位置と回転から計算し、SVGや自動生成通路ピースは保存しません。
+手動接続では距離・方向・幅・コネクター種類による制約を設けません。
+既存の隣接コネクター候補判定は別用途のロジックとして残しています。
+
+![Connector MVP](docs/images/connector-mvp.png)
 
 ### 衝突判定
 ピース配置時および移動時に、他のピースとの重なりを自動検出します。
@@ -44,10 +60,17 @@ React + TypeScript + Vite で構築した、ブラウザ上で動作するダン
 
 ### 保存
 Dexie + IndexedDB を使用してブラウザローカルに保存します。
+メニューバーの「保存」で保存し、「読込」で保存済みダンジョンを開きます。
+ページ再読み込み後も「読込」から部屋・接続を復元できます。
+読み込み時には現在の未保存の編集を置き換えます。
 
 ### Export / Import
 JSON形式でエクスポート・インポートが可能です。
 フォーマット識別子 `trpg-dungeon-generator` とスキーマバージョンを含みます。
+現在のスキーマは `1.1.0` で、接続情報も含みます。従来の `1.0.0` を読み込み可能です。
+接続情報のない旧データは空の接続一覧として読み込みます。
+旧 `PlacedRoom.connections` に接続がある場合はドキュメント単位の接続へ移行し、
+部屋単位のマップは除去します。詳細は [コネクター実装メモ](docs/connector-system.md) を参照してください。
 
 ### Markdown Editor
 - ツールバーの `Markdown` ボタンから別ウィンドウで開く
@@ -90,6 +113,7 @@ src/
   components/
     canvas/       - SVGキャンバス（グリッド・ズーム・パン）
     pieces/       - ピース描画・配置ゴースト
+    connections/  - 直線描画・接続ポイントUI
     sidebar/      - ピースライブラリUI
     toolbar/      - ツールバー
     ui/           - メニューバー・プロパティパネル
@@ -103,6 +127,7 @@ npm install
 npm run dev      # 開発サーバー起動
 npm run build    # プロダクションビルド
 npm run lint     # Oxlint
+npm test         # 接続・履歴・互換性・入出力・IndexedDBの回帰テスト
 ```
 
 ## データモデル
@@ -134,7 +159,16 @@ interface PlacedRoom {
   piece: Piece;
   position: { x: number; y: number };
   rotation: 0 | 90 | 180 | 270;
-  connections: Record<string, { roomId: string; connectorId: string }>;
+}
+
+// 配置済み部屋同士の論理的な接続（座標は保存しない）
+interface Connection {
+  id: string;
+  fromRoomId: string;
+  fromConnectorId: string;
+  toRoomId: string;
+  toConnectorId: string;
+  type: 'corridor' | 'door' | 'stairs' | 'secret';
 }
 
 // ダンジョンドキュメント
@@ -143,6 +177,7 @@ interface DungeonDocument {
   name: string;
   version: string;
   rooms: PlacedRoom[];
+  connections: Connection[];
   markdown: string;
   meta: DungeonMeta;
   createdAt: string;
@@ -203,6 +238,8 @@ IndexedDBを扱いやすくするORM。
 - [x] Export / Import
 
 ### Phase2
+
+- [x] 手動コネクター接続 MVP（直線・追従・保存・Undo / Redo）
 
 - [ ] コネクター自動接続
 

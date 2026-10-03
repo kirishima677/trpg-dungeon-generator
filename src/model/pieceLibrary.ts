@@ -5,7 +5,7 @@ import type { Piece } from './types';
  * All measurements are in grid cells.
  *
  * IMPORTANT: Connector IDs must be static strings (not randomly generated) so
- * that PlacedRoom.connections references survive save/load round-trips.
+ * that Connection references survive save/load round-trips.
  */
 export const DEFAULT_PIECES: Piece[] = [
   // ── 4×4 Square Room ────────────────────────────────────────────────────────

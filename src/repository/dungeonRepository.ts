@@ -13,7 +13,9 @@ export const dungeonRepository = {
       name: normalized.name,
       version: normalized.version,
       rooms: normalized.rooms,
+      connections: normalized.connections,
       meta: normalized.meta,
+      updatedAt: normalized.updatedAt,
     });
     if (updated === 0) {
       await db.dungeons.put(normalized);
