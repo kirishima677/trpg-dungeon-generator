@@ -5,7 +5,8 @@
 - `model/types.ts`: `Connector` はテンプレート内の接続口、`PlacedRoom` は配置状態、`Connection` は接続対象のIDと種類を保持する。
 - `model/connections.ts`: 参照先の存在、異なる部屋、1ポイント1接続、接続IDの一意性を検証する。
 - `editor/connectors/connectionGeometry.ts`: 既存の `getWorldConnectors` による回転・移動変換を利用し、外向きセル辺の中央を端点として計算する。
-- `components/connections/ConnectionRenderer.tsx`: 現在の部屋から端点を取得してSVGの直線を描画する。隠し通路は破線にする。
+- `editor/connectors/routing/`: 端点と方向から一時的な直交経路を計算する。
+- `components/connections/ConnectionRenderer.tsx`: Routing層の結果をSVG Pathで描画する。隠し通路は破線にする。
 - `components/connections/ConnectorPoints.tsx`: 接続モードのポイント選択・状態表示を担当する。
 - `store/dungeonStore.ts`: 2クリックでの作成、線の選択・削除、部屋削除に伴う接続削除、履歴を管理する。
 - `repository/dungeonRepository.ts`: 部屋と接続を一緒に保存する。Markdownは既存の別ウィンドウの保存経路を維持する。
@@ -43,11 +44,11 @@ IndexedDBの接続フィールドはインデックスを持たないため、DB
 
 1. 部屋を2つ配置する。
 2. 🔗 または `C` で接続モードにする。
-3. 異なる部屋の白いポイントをクリックし、青い始点表示から直線生成・灰色の接続済み表示まで確認する。
+3. 異なる部屋の白いポイントをクリックし、青い始点表示から直交経路生成・灰色の接続済み表示まで確認する。
 4. `V` で選択モードに戻り、部屋をドラッグし、`R` で回転して線の追従を確認する。
 5. 保存してページを再読み込みし、「読込」から同じダンジョンを開く。
 6. JSONをエクスポートし、インポートして接続が復元されることを確認する。
 7. 線を選択して「接続を削除」、Undoで復元、Redoで再削除する。
 8. 削除モードで線を削除できること、部屋を削除すると接続も削除されUndoで両方戻ることを確認する。
 
-MVPは直線表示のみ。線が部屋を横切る場合があり、障害物回避・L字ルーティング・通路ピース生成・高度な接続編集は将来拡張とする。
+描画は [直交ルーティング](orthogonal-routing.md) に対応。線が部屋を横切る場合があり、障害物回避・通路ピース生成・高度な接続編集は将来拡張とする。
