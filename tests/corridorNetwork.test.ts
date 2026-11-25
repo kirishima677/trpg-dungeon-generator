@@ -13,6 +13,7 @@ import { createOccupancyGrid } from '../src/editor/connectors/routing/occupancyG
 import { routeConnections } from '../src/editor/connectors/routing/connectionRouter';
 import { CorridorRenderer } from '../src/components/connections/CorridorRenderer';
 import { ConnectionRenderer } from '../src/components/connections/ConnectionRenderer';
+import { GridCanvas } from '../src/components/canvas/GridCanvas';
 import { useDungeonStore } from '../src/store/dungeonStore';
 import { buildExportEnvelope, parseImport } from '../src/utils/exportImport';
 import { dungeonRepository } from '../src/repository/dungeonRepository';
@@ -130,6 +131,57 @@ test('T shapes keep one wall, shared boundaries are drawn once, and selection co
   const highlighted = markup.match(/data-corridor-floor="true" data-highlighted="true" d="([^"]+)"/)?.[1] ?? '';
   assert.equal((highlighted.match(/Z/g) ?? []).length, 2);
   assert.equal((pathData(markup, 'data-corridor-floor').match(/Z/g) ?? []).length, 3);
+});
+
+test('cell grids separate every open side at straights, corners and all junction orientations without covering walls', () => {
+  for (const mask of [H, V, 3, 6, 12, 9, 7, 11, 13, 14, 15]) {
+    const markup = renderNetwork(buildCorridorNetwork([source('a', mask)]));
+    const grid = pathData(markup, 'data-corridor-grid').match(/M [^M]+/g)?.map(s => s.trim()) ?? [];
+    const walls = pathData(markup, 'data-corridor-walls').match(/M [^M]+/g)?.map(s => s.trim()) ?? [];
+    assert.equal(grid.length, mask.toString(2).replaceAll('0', '').length);
+    assert.equal(grid.length + walls.length, 4);
+    assert.ok(grid.every(edge => !walls.includes(edge)));
+    assert.match(markup, /data-corridor-grid="true"[^>]*stroke="#475569" stroke-width="1.5" pointer-events="none"/);
+  }
+});
+
+test('shared straight sections and crossings draw each cell divider once', () => {
+  const cells = [0, 1, 2].map(x => ({ x, y: 0, connections: H }));
+  const n = buildCorridorNetwork([
+    { connectionId: 'a', type: 'corridor', cells }, { connectionId: 'b', type: 'corridor', cells },
+  ]);
+  const markup = renderNetwork(n);
+  const dividers = pathData(markup, 'data-corridor-grid').match(/M [^M]+/g)?.map(s => s.trim()).sort();
+  assert.deepEqual(dividers, [0, 40, 80, 120].map(x => `M ${x} 0 L ${x} 40`).sort());
+  const cross = renderNetwork(scene().network);
+  const lines = pathData(cross, 'data-corridor-grid').match(/M [^M]+/g)?.map(s => s.trim()) ?? [];
+  assert.equal(lines.length, 10); // Six cell-to-cell dividers and four room openings.
+  assert.equal(new Set(lines).size, lines.length);
+});
+
+test('selection keeps dividers above both floor colors and below external walls', () => {
+  const n = scene().network;
+  const plain = renderNetwork(n), selected = renderNetwork(n, 'a-horizontal');
+  assert.equal(pathData(selected, 'data-corridor-grid'), pathData(plain, 'data-corridor-grid'));
+  const gridIndex = selected.indexOf('data-corridor-grid');
+  assert.ok(gridIndex > selected.lastIndexOf('data-corridor-floor'));
+  assert.ok(gridIndex < selected.indexOf('data-corridor-walls'));
+  const allSelected = renderToStaticMarkup(createElement(CorridorRenderer, { cells: n.cells, isSelected: true, interactive: false }));
+  assert.equal(pathData(allSelected, 'data-corridor-grid'), pathData(plain, 'data-corridor-grid'));
+  assert.match(allSelected, /data-corridor-grid="true"[^>]*pointer-events="none"/);
+  // Zustand's server snapshot reads initial state rather than the live store.
+  const serverState = useDungeonStore.getInitialState();
+  const previousView = serverState.view;
+  try {
+    serverState.view = { ...previousView, panX: 80, panY: -40, zoom: 0.5 };
+    const transformed = renderToStaticMarkup(createElement(GridCanvas, { width: 800, height: 600 },
+      createElement(CorridorRenderer, { cells: n.cells, isSelected: false, interactive: true })));
+    assert.match(transformed, /<g transform="translate\(80,-40\) scale\(0.5\)">/);
+    assert.equal(pathData(transformed, 'data-corridor-grid'), pathData(plain, 'data-corridor-grid'));
+    assert.ok(transformed.indexOf('translate(80,-40)') < transformed.indexOf('data-corridor-grid'));
+  } finally {
+    serverState.view = previousView;
+  }
 });
 
 test('shared-cell clicks cycle individual sources and delete mode never guesses a shared source', () => {

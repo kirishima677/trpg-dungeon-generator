@@ -4,7 +4,7 @@ import { getWorldCells, getWorldConnectors } from '../../utils/geometry';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import { connectorPoint } from '../../editor/connectors/connectionGeometry';
-import { GRID_SIZE } from '../../editor/grid';
+import { GRID_LINE_COLOR, GRID_LINE_WIDTH, GRID_SIZE } from '../../editor/grid';
 import { DIRECTION_BITS } from '../../editor/connectors/corridor/directions';
 import { corridorWalls } from '../../editor/connectors/corridor/corridorShape';
 
@@ -84,8 +84,8 @@ export function PlacedRoomSvg({ room, isSelected, openConnectorIds }: PlacedRoom
       ? '#d1fae5'
       : '#dbeafe';
 
-  const strokeColor = isSelected ? '#2563eb' : '#475569';
-  const strokeWidth = isSelected ? 2.5 : 1.5;
+  const strokeColor = isSelected ? '#2563eb' : GRID_LINE_COLOR;
+  const strokeWidth = isSelected ? 2.5 : GRID_LINE_WIDTH;
 
   return (
     <g
