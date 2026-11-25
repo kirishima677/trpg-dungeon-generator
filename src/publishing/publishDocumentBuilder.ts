@@ -2,12 +2,53 @@ import type { Connection, DungeonDocument, PlacedRoom } from '../model/types';
 import { pieceErrors } from '../editor/pieces/pieceDefinition';
 import { roomDisplayName } from '../model/roomInformation';
 import type { PublishAudience } from './publishProfile';
+import type { PublishProfile } from './publishProfile';
+import { validatePublishProfile } from './publishProfile';
+import type { PublishScenario, ScenarioGuideOptions } from './scenario/scenarioGuide';
+import { compareRoomNumbers, MAX_GUIDE_ROOMS, MAX_GUIDE_TEXT_CHARS, MAX_MARKDOWN_CHARS, roomAnchor, validateScenarioGuideOptions } from './scenario/scenarioGuide';
 
 export type PublishRoom = Omit<PlacedRoom, 'information'> & { label: { number: string; name: string } };
 export interface PublishDocument {
   audience: PublishAudience;
   rooms: PublishRoom[];
   connections: Connection[];
+  scenario?: PublishScenario;
+}
+
+export type ScenarioPublishDocument = Pick<PublishDocument, 'audience'> & { scenario: PublishScenario };
+
+/** Map-independent extraction lets a guide still be exported when geometry is invalid. */
+export function buildScenarioPublishDocument(source: DungeonDocument, profile: PublishProfile, options: ScenarioGuideOptions): ScenarioPublishDocument {
+  validatePublishProfile(profile);
+  validateScenarioGuideOptions(options);
+  if (!['player', 'gm'].includes(profile.audience)) throw new Error('出力対象が不正です。');
+  if (source.rooms.length > MAX_GUIDE_ROOMS) throw new Error(`ガイドは${MAX_GUIDE_ROOMS}部屋までです。`);
+  const gm = profile.audience === 'gm';
+  let total = 0;
+  const text = (value: string) => {
+    if (typeof value !== 'string' || value.length > MAX_MARKDOWN_CHARS) throw new Error(`各テキストは${MAX_MARKDOWN_CHARS.toLocaleString()}文字以内で指定してください。`);
+    total += value.length;
+    if (total > MAX_GUIDE_TEXT_CHARS) throw new Error(`ガイド全体のテキストは${MAX_GUIDE_TEXT_CHARS.toLocaleString()}文字までです。`);
+    return value;
+  };
+  const ids = new Set<string>(), anchors = new Set<string>();
+  // Sort IDs first so the rare hash-collision suffix is stable across input order.
+  const indexed = source.rooms.map((room, index) => ({ room, index })).sort((a, b) => a.room.id < b.room.id ? -1 : a.room.id > b.room.id ? 1 : 0);
+  const rooms = indexed.map(({ room, index }) => {
+    if (ids.has(room.id)) throw new Error('部屋IDが重複しています。');
+    ids.add(room.id);
+    const base = roomAnchor(room.id); let anchorId = base, suffix = 1;
+    while (anchors.has(anchorId)) anchorId = `${base}-${suffix++}`;
+    anchors.add(anchorId);
+    const info = room.information;
+    return { anchorId, mapRoomId: `room-${index}`, number: text(info.number),
+      ...(profile.showRoomNames && info.name.trim() ? { name: text(info.name.trim()) } : {}),
+      ...(options.includeRoomDescriptions && info.description.trim() ? { description: text(info.description) } : {}),
+      ...(gm && options.includeGmNotes && info.gmNotes.trim() ? { gmNotes: text(info.gmNotes) } : {}),
+      ...(gm && options.includeRoomTags && info.tags.length ? { tags: info.tags.map(text) } : {}) };
+  }).sort((a, b) => compareRoomNumbers(a.number, b.number) || (a.anchorId < b.anchorId ? -1 : a.anchorId > b.anchorId ? 1 : 0));
+  return { audience: profile.audience, scenario: { title: text(source.name), rooms,
+    ...(gm && options.includeScenarioMarkdown && source.markdown.trim() ? { scenarioMarkdown: text(source.markdown) } : {}) } };
 }
 
 /** Allowlist only. No project name, Markdown, notes, descriptions, tags or original IDs. */

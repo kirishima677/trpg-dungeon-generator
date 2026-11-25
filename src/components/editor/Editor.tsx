@@ -17,6 +17,8 @@ import {
 } from '../../editor/markdown/events';
 import { openMarkdownEditorWindow } from '../../editor/markdown/markdownWindow';
 import { createSnapshotProvider } from '../../publishing/snapshotChannel';
+import { snapshotWithSavedMarkdown } from '../../publishing/publishSnapshot';
+import { dungeonRepository } from '../../repository/dungeonRepository';
 import { openEditorWindow } from '../../editor/editorWindows';
 import { collectPieceReferences, registerPieceReferenceReader } from '../../editor/pieces/pieceReferences';
 
@@ -40,6 +42,7 @@ export function Editor() {
 
   const publishingToken = useRef(crypto.randomUUID());
   const publishingProvider = useRef<ReturnType<typeof createSnapshotProvider> | null>(null);
+  const publishRequest = useRef(0);
   useEffect(() => {
     publishingToken.current = crypto.randomUUID();
     publishingProvider.current = createSnapshotProvider(publishingToken.current, dungeon.id);
@@ -157,10 +160,16 @@ export function Editor() {
       <Toolbar onOpenPublishing={() => {
         try {
           const current = useDungeonStore.getState().dungeon;
-          publishingProvider.current?.capture(current);
+          const provider = publishingProvider.current, request = ++publishRequest.current;
+          if (!provider) throw new Error('出版画面の準備が完了していません。');
           const token = publishingToken.current;
           const opened = openEditorWindow(`publishing-${token}`, { publishing: '1', source: token, dungeonId: current.id }, 'popup=yes,width=1200,height=850');
           setWindowError(opened ? '' : '出版画面を開けませんでした。ポップアップを許可してください。');
+          if (opened) void snapshotWithSavedMarkdown(current, id => dungeonRepository.load(id)).then(snapshot => {
+            if (request === publishRequest.current && provider === publishingProvider.current) provider.capture(snapshot);
+          }).catch(() => {
+            if (request === publishRequest.current && provider === publishingProvider.current) setWindowError('保存済みMarkdownを取得できませんでした。もう一度「出版」を押してください。');
+          });
         } catch { setWindowError('出版用データを取得できませんでした。ページを再読み込みしてください。'); }
       }} onOpenMarkdown={handleOpenMarkdown} onOpenPieceEditor={() => {
         const opened = openEditorWindow('piece-editor-window', { pieceEditor: '1' }, 'popup=yes,width=1200,height=850');

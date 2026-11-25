@@ -13,5 +13,10 @@
 .publish-warning { background: #fef3c7; padding: 10px; border-radius: 6px; }
 .publish-error { color: #b91c1c; overflow-wrap: anywhere; }
 .publish-preview { min-width: 0; }
+.publish-modes { display: flex; gap: 8px; margin-top: 16px; }
+.publish-modes button[aria-pressed=false] { color: #1e40af; background: #dbeafe; }
+.publish-guide-preview { min-width: 0; }
+.publish-guide-preview iframe { width: 100%; height: 80vh; min-height: 500px; border: 1px solid #cbd5e1; background: white; }
+.publishing aside fieldset + fieldset { margin-top: 14px; }
 .publish-preview-scroll { overflow: auto; max-height: 78vh; min-height: 240px; border: 1px solid #cbd5e1; background-color: #e2e8f0; background-image: conic-gradient(#cbd5e1 25%, transparent 0 50%, #cbd5e1 0 75%, transparent 0); background-size: 20px 20px; }
 @media (max-width: 700px) { .publish-layout { grid-template-columns: minmax(0, 1fr); } .publishing { padding: 12px; } }

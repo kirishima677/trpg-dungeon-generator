@@ -2,9 +2,9 @@ export const MAX_CANVAS_DIMENSION = 8192;
 export const MAX_CANVAS_PIXELS = 16_777_216;
 export const EXPORT_TIMEOUT_MS = 15_000;
 
-export function exportFilename(name: string, audience: 'gm' | 'player', format: 'svg' | 'png') {
+export function exportFilename(name: string, audience: 'gm' | 'player', format: 'svg' | 'png' | 'html') {
   const safe = [...name.normalize('NFC')].map(c => c.codePointAt(0)! < 32 || c.codePointAt(0) === 127 ? '_' : c).join('').replace(/[<>:"/\\|?*]/g, '_').replace(/[. ]+$/g, '').trim();
-  return `${([...safe].slice(0, 80).join('') || 'dungeon')}-${audience}.${format}`;
+  return `${([...safe].slice(0, 80).join('') || 'dungeon')}-${audience}${format === 'html' ? '-guide' : ''}.${format}`;
 }
 export function validatePngDimensions(width: number, height: number) {
   if (![width, height].every(n => Number.isSafeInteger(n) && n > 0 && n <= MAX_CANVAS_DIMENSION)
