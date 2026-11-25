@@ -16,6 +16,7 @@ import {
   isMarkdownSavedEvent,
 } from '../../editor/markdown/events';
 import { openMarkdownEditorWindow } from '../../editor/markdown/markdownWindow';
+import { createSnapshotProvider } from '../../publishing/snapshotChannel';
 import { openEditorWindow } from '../../editor/editorWindows';
 import { collectPieceReferences, registerPieceReferenceReader } from '../../editor/pieces/pieceReferences';
 
@@ -36,6 +37,14 @@ export function Editor() {
     setEditorMode: s.setEditorMode,
     editorMode: s.editorMode,
   })));
+
+  const publishingToken = useRef(crypto.randomUUID());
+  const publishingProvider = useRef<ReturnType<typeof createSnapshotProvider> | null>(null);
+  useEffect(() => {
+    publishingToken.current = crypto.randomUUID();
+    publishingProvider.current = createSnapshotProvider(publishingToken.current, dungeon.id);
+    return () => { publishingProvider.current?.close(); publishingProvider.current = null; };
+  }, [dungeon.id]);
 
   const connectionScene = useConnectionScene(dungeon.rooms, dungeon.connections);
 
@@ -145,7 +154,15 @@ export function Editor() {
       <MenuBar />
 
       {/* Toolbar */}
-      <Toolbar onOpenMarkdown={handleOpenMarkdown} onOpenPieceEditor={() => {
+      <Toolbar onOpenPublishing={() => {
+        try {
+          const current = useDungeonStore.getState().dungeon;
+          publishingProvider.current?.capture(current);
+          const token = publishingToken.current;
+          const opened = openEditorWindow(`publishing-${token}`, { publishing: '1', source: token, dungeonId: current.id }, 'popup=yes,width=1200,height=850');
+          setWindowError(opened ? '' : '出版画面を開けませんでした。ポップアップを許可してください。');
+        } catch { setWindowError('出版用データを取得できませんでした。ページを再読み込みしてください。'); }
+      }} onOpenMarkdown={handleOpenMarkdown} onOpenPieceEditor={() => {
         const opened = openEditorWindow('piece-editor-window', { pieceEditor: '1' }, 'popup=yes,width=1200,height=850');
         setWindowError(opened ? '' : 'ピースエディタを開けませんでした。ポップアップを許可してください。');
       }} />
