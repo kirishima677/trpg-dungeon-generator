@@ -48,11 +48,22 @@ React + TypeScript + Vite で構築した、ブラウザ上で動作するダン
 - `V` キーで選択モードへ戻り、部屋を移動・回転すると線が追従する
 
 接続は `DungeonDocument.connections` に部屋ID・固定コネクターID・種類を保存します。
-直線の始点・終点は部屋の現在位置と回転から計算し、SVGや自動生成通路ピースは保存しません。
+接続経路は部屋の現在位置・回転後のコネクター方向から毎回計算し、SVG・経路座標・自動生成通路ピースは保存しません。
 手動接続では距離・方向・幅・コネクター種類による制約を設けません。
 既存の隣接コネクター候補判定は別用途のロジックとして残しています。
 
-![Connector MVP](docs/images/connector-mvp.png)
+### 直交ルーティング
+
+接続線は水平・垂直線を組み合わせたL字・Z字・折り返し経路で描画します。
+始点はコネクターの外向き方向へ伸び、終点は外側から接続口へ入ります。
+対向・直角・同方向の全16通りに対応し、部屋の移動・回転やUndo / Redo後も自動で再計算します。
+対向する接続口が一直線上にある場合は水平または垂直の1本線になります。
+
+Routing層とRendererは分離しています。経路は保存データに追加せず、既存の接続情報から再生成します。
+障害物回避・交差回避・Waypoint・手動経路編集・通路アセット生成は今後の拡張です。
+詳細は [直交ルーティング実装メモ](docs/orthogonal-routing.md) を参照してください。
+
+![Orthogonal Routing](docs/images/orthogonal-routing.png)
 
 ### 衝突判定
 ピース配置時および移動時に、他のピースとの重なりを自動検出します。
@@ -105,7 +116,8 @@ src/
   db/             - Dexie DBセットアップ
   repository/     - データアクセス層
   editor/
-    connectors/   - コネクター互換性ロジック
+    connectors/   - コネクター座標計算・互換性ロジック
+      routing/    - 直交経路計算・Router境界
     collision/    - 衝突判定
   utils/
     geometry.ts   - 回転・座標変換ユーティリティ
@@ -113,7 +125,7 @@ src/
   components/
     canvas/       - SVGキャンバス（グリッド・ズーム・パン）
     pieces/       - ピース描画・配置ゴースト
-    connections/  - 直線描画・接続ポイントUI
+    connections/  - 接続経路描画・接続ポイントUI
     sidebar/      - ピースライブラリUI
     toolbar/      - ツールバー
     ui/           - メニューバー・プロパティパネル
@@ -127,7 +139,7 @@ npm install
 npm run dev      # 開発サーバー起動
 npm run build    # プロダクションビルド
 npm run lint     # Oxlint
-npm test         # 接続・履歴・互換性・入出力・IndexedDBの回帰テスト
+npm test         # 接続・直交経路・履歴・互換性・入出力・IndexedDBの回帰テスト
 ```
 
 ## データモデル
@@ -240,6 +252,8 @@ IndexedDBを扱いやすくするORM。
 ### Phase2
 
 - [x] 手動コネクター接続 MVP（直線・追従・保存・Undo / Redo）
+
+- [x] 直交ルーティング基盤（コネクター方向に応じたL字・Z字・折り返し経路）
 
 - [ ] コネクター自動接続
 

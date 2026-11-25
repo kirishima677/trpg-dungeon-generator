@@ -1,6 +1,6 @@
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
-import { connectionEndpoints } from '../../editor/connectors/connectionGeometry';
+import { routeConnection } from '../../editor/connectors/routing/connectionRouter';
 
 const GRID_SIZE = 40;
 
@@ -16,22 +16,21 @@ export function ConnectionRenderer() {
   return (
     <g aria-label="接続線">
       {dungeon.connections.map(connection => {
-        const endpoints = connectionEndpoints(connection, dungeon.rooms);
-        if (!endpoints) return null;
-        const coordinates = {
-          x1: endpoints.from.x * GRID_SIZE, y1: endpoints.from.y * GRID_SIZE,
-          x2: endpoints.to.x * GRID_SIZE, y2: endpoints.to.y * GRID_SIZE,
-        };
+        const route = routeConnection(connection, dungeon.rooms);
+        if (!route) return null;
+        const d = route.points.map((point, index) =>
+          `${index === 0 ? 'M' : 'L'} ${point.x * GRID_SIZE} ${point.y * GRID_SIZE}`).join(' ');
         const selected = connection.id === selectedConnectionId;
         const choose = () => editorMode === 'delete'
           ? deleteConnection(connection.id) : selectConnection(connection.id);
         return (
           <g key={connection.id} data-connection-id={connection.id}>
-            <line {...coordinates} stroke={selected ? '#2563eb' : connection.type === 'secret' ? '#7c3aed' : '#475569'}
+            <path d={d} fill="none" stroke={selected ? '#2563eb' : connection.type === 'secret' ? '#7c3aed' : '#475569'}
               strokeWidth={selected ? 4 : 3} strokeDasharray={connection.type === 'secret' ? '6 4' : undefined}
+              strokeLinejoin="round"
               vectorEffect="non-scaling-stroke" pointerEvents="none" />
             {/* A larger transparent hit area keeps thin lines easy to select. */}
-            <line {...coordinates} stroke="transparent" strokeWidth={14} vectorEffect="non-scaling-stroke"
+            <path d={d} fill="none" stroke="transparent" strokeWidth={14} strokeLinejoin="round" vectorEffect="non-scaling-stroke"
               pointerEvents={editorMode === 'place' ? 'none' : 'stroke'}
               role="button" tabIndex={editorMode === 'place' ? -1 : 0}
               aria-label={`接続線 ${connection.type} ${connection.id}`}
@@ -43,7 +42,7 @@ export function ConnectionRenderer() {
                 if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); choose(); }
               }}>
               <title>接続線 ({connection.type}) — クリックで選択、削除モードで削除</title>
-            </line>
+            </path>
           </g>
         );
       })}
