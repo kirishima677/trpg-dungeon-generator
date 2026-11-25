@@ -1,4 +1,4 @@
-import type { Connection, ConnectorEndpoint, PlacedRoom } from './types';
+import type { Connection, ConnectorEndpoint, PlacedRoomInput as PlacedRoom } from './types';
 
 export function usesEndpoint(connection: Connection, endpoint: ConnectorEndpoint): boolean {
   return (connection.fromRoomId === endpoint.roomId && connection.fromConnectorId === endpoint.connectorId)

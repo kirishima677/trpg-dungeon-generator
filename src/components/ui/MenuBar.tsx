@@ -127,7 +127,7 @@ export function MenuBar() {
         {saving ? '保存中…' : '保存'}
       </button>
       <button onClick={handleList} disabled={loading} style={btnStyle}>読込</button>
-      <button onClick={handleExport} style={btnStyle}>エクスポート</button>
+      <button onClick={handleExport} title="GM専用情報も含む完全なプロジェクトJSONを出力" style={btnStyle}>エクスポート</button>
       <button onClick={handleImport} style={btnStyle}>インポート</button>
 
       <input

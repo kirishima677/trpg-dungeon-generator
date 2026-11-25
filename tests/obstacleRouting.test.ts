@@ -14,7 +14,7 @@ import { resolveConnectionRoute, routeConnection, routeConnections } from '../sr
 import { followsConnectorDirections, simplifyRoutePoints } from '../src/editor/connectors/routing/routeUtils';
 import type { GridPosition, RoutingResult } from '../src/editor/connectors/routing/types';
 import { useDungeonStore } from '../src/store/dungeonStore';
-import { buildExportEnvelope, parseImport } from '../src/utils/exportImport';
+import { buildExportEnvelope, parseImport, SCHEMA_VERSION } from '../src/utils/exportImport';
 import { dungeonRepository } from '../src/repository/dungeonRepository';
 import { db } from '../src/db/db';
 
@@ -295,7 +295,7 @@ test('JSON and IndexedDB restore avoided routes without persisting occupancy, pa
   assert.equal(expected.status, 'success');
   const before = structuredClone(state().dungeon);
   const exported = buildExportEnvelope(before);
-  assert.equal(exported.schemaVersion, '1.1.0');
+  assert.equal(exported.schemaVersion, SCHEMA_VERSION);
   const imported = parseImport(JSON.parse(JSON.stringify(exported))).dungeon;
   assert.deepEqual(resolveConnectionRoute(c, imported.rooms), expected);
   await dungeonRepository.saveMainEditorSnapshot(before);

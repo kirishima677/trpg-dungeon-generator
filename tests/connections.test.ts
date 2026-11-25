@@ -5,7 +5,7 @@ import { useDungeonStore } from '../src/store/dungeonStore';
 import { DEFAULT_PIECES } from '../src/model/pieceLibrary';
 import { normalizeDungeonDocument } from '../src/model/normalizeDungeon';
 import { connectionEndpoints } from '../src/editor/connectors/connectionGeometry';
-import { buildExportEnvelope, parseImport } from '../src/utils/exportImport';
+import { buildExportEnvelope, parseImport, SCHEMA_VERSION } from '../src/utils/exportImport';
 import { dungeonRepository } from '../src/repository/dungeonRepository';
 import { db } from '../src/db/db';
 import type { ConnectorEndpoint, DungeonDocument, PlacedRoom, Rotation } from '../src/model/types';
@@ -184,7 +184,7 @@ test('export/import roundtrip preserves connections, types and calculated geomet
   state().rotateRoom('a');
   const before = state().dungeon;
   const envelope = buildExportEnvelope(before);
-  assert.equal(envelope.schemaVersion, '1.1.0');
+  assert.equal(envelope.schemaVersion, SCHEMA_VERSION);
   const imported = parseImport(JSON.parse(JSON.stringify(envelope))).dungeon;
   state().setDungeon(imported);
   assert.deepEqual(state().dungeon.connections, before.connections);

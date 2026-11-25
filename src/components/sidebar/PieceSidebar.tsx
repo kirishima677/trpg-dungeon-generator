@@ -5,6 +5,8 @@ import { useDungeonStore } from '../../store';
 import { usePieceLibrary } from '../pieces/usePieceLibrary';
 import { pieceRepository } from '../../repository/pieceRepository';
 import { withPieceLibraryRead } from '../../editor/pieces/pieceReferences';
+import { useState } from 'react';
+import { RoomList } from './RoomList';
 
 const THUMB_SIZE = 80;
 const CELL = 12; // px per cell in thumbnail
@@ -57,12 +59,13 @@ export function PieceSidebar() {
   })));
 
   const library = usePieceLibrary();
+  const [tab, setTab] = useState<'pieces' | 'rooms'>('pieces');
   const pieces = [...DEFAULT_PIECES, ...library.pieces];
 
   return (
     <div
       style={{
-        width: 200,
+        width: 200, flexShrink: 0,
         overflowY: 'auto',
         borderRight: '1px solid #e2e8f0',
         background: '#f8fafc',
@@ -73,12 +76,17 @@ export function PieceSidebar() {
       }}
     >
       <div style={{ fontWeight: 700, fontSize: 13, color: '#475569', marginBottom: 4 }}>
-        ピースライブラリ
+        {tab === 'pieces' ? 'ピースライブラリ' : '部屋一覧'}
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button aria-pressed={tab === 'pieces'} onClick={() => setTab('pieces')}>ピース</button>
+        <button aria-pressed={tab === 'rooms'} onClick={() => setTab('rooms')}>部屋一覧</button>
       </div>
 
-      {library.error && <p role="alert">{library.error}</p>}
+      {tab === 'rooms' && <RoomList />}
+      {tab === 'pieces' && library.error && <p role="alert">{library.error}</p>}
 
-      {pieces.map(piece => {
+      {tab === 'pieces' && pieces.map(piece => {
         const isSelected = pendingPiece?.id === piece.id;
         return (
           <button

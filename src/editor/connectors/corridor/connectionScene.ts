@@ -6,6 +6,8 @@ import { generateCorridorCells } from './corridorGeometry';
 import type { CorridorGeometryResult } from './corridorGeometry';
 import { buildCorridorNetwork } from './corridorNetwork';
 import type { CorridorNetwork } from './corridorNetwork';
+import { createOccupancyGrid } from '../routing/occupancyGrid';
+import { routeConnections } from '../routing/connectionRouter';
 
 export const MAX_TOTAL_CORRIDOR_CELLS = 16_384;
 
@@ -65,4 +67,21 @@ export function prepareConnectionScene(
     drawing.result.status === 'success' && drawing.corridor?.status === 'success'
       ? [{ connectionId: drawing.connection.id, type: drawing.connection.type, cells: drawing.corridor.cells }] : []));
   return { drawings, openConnectorIds, cache, network };
+}
+
+/** Metadata and history clones do not invalidate the physical routing pipeline. */
+export function createConnectionSceneResolver() {
+  let previousLayout = '', previousConnections = '';
+  let grid: OccupancyGrid | undefined, scene: ConnectionScene | undefined;
+  return (rooms: PlacedRoom[], connections: Connection[]): ConnectionScene => {
+    const layout = JSON.stringify(rooms.map(r => [r.id, r.position.x, r.position.y, r.rotation,
+      r.piece.cells.map(c => [c.x, c.y]), r.piece.connectors.map(c => [c.id, c.position.x, c.position.y, c.direction, c.width, c.kind])]));
+    const links = JSON.stringify(connections.map(c => [c.id, c.fromRoomId, c.fromConnectorId, c.toRoomId, c.toConnectorId, c.type]));
+    if (scene && layout === previousLayout && links === previousConnections) return scene;
+    if (!grid || layout !== previousLayout) grid = createOccupancyGrid(rooms);
+    const results = routeConnections(connections, rooms, grid);
+    scene = prepareConnectionScene(connections, rooms, results, grid, scene?.cache);
+    previousLayout = layout; previousConnections = links;
+    return scene;
+  };
 }

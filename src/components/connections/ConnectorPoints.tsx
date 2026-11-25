@@ -3,6 +3,7 @@ import { useDungeonStore } from '../../store';
 import { getWorldConnectors } from '../../utils/geometry';
 import { connectorPoint } from '../../editor/connectors/connectionGeometry';
 import { usesEndpoint } from '../../model/connections';
+import { roomDisplayLabel } from '../../model/roomInformation';
 
 import { GRID_SIZE } from '../../editor/grid';
 
@@ -14,7 +15,7 @@ export function ConnectorPoints() {
   if (editorMode !== 'connect') return null;
   return (
     <g aria-label="接続ポイント">
-      {dungeon.rooms.flatMap((room, index) => getWorldConnectors(room).map(connector => {
+      {dungeon.rooms.flatMap(room => getWorldConnectors(room).map(connector => {
         const endpoint = { roomId: room.id, connectorId: connector.id };
         const occupied = dungeon.connections.some(connection => usesEndpoint(connection, endpoint));
         const selected = pendingConnector?.roomId === room.id && pendingConnector.connectorId === connector.id;
@@ -22,7 +23,7 @@ export function ConnectorPoints() {
         const disabled = occupied || sameRoom;
         const point = connectorPoint(connector);
         const status = occupied ? '接続済み' : selected ? '選択中' : sameRoom ? '別の部屋を選択してください' : '未接続';
-        const label = `部屋${index + 1} ${room.piece.name} / ${connector.worldDirection} / ${connector.id} (${status})`;
+        const label = `部屋 ${roomDisplayLabel(room)} / ${connector.worldDirection} / ${connector.id} (${status})`;
         return (
           <circle key={`${room.id}-${connector.id}`}
             data-room-id={room.id} data-connector-id={connector.id} data-status={status}

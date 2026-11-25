@@ -2,6 +2,8 @@ import React from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import { getWorldConnectors } from '../../utils/geometry';
+import { RoomInformationForm } from './RoomInformationForm';
+import { roomDisplayLabel } from '../../model/roomInformation';
 
 export function PropertiesPanel() {
   const { dungeon, selectedRoomId, rotateRoom, deleteRoom, selectedConnectionId, deleteConnection, selectConnection } = useDungeonStore(useShallow(s => ({
@@ -34,10 +36,9 @@ export function PropertiesPanel() {
   const connection = dungeon.connections.find(c => c.id === selectedConnectionId);
   if (connection) {
     const endpointLabel = (roomId: string, connectorId: string) => {
-      const index = dungeon.rooms.findIndex(r => r.id === roomId);
-      const room = dungeon.rooms[index];
+      const room = dungeon.rooms.find(r => r.id === roomId);
       const connector = room && getWorldConnectors(room).find(c => c.id === connectorId);
-      return `部屋${index + 1} ${room?.piece.name ?? roomId} / ${connector?.worldDirection ?? connectorId}`;
+      return `${room ? roomDisplayLabel(room) : roomId} / ${connector?.worldDirection ?? connectorId}`;
     };
     return (
       <div style={panelStyle}>
@@ -70,8 +71,10 @@ export function PropertiesPanel() {
     <div style={panelStyle}>
       {picker}
       <div style={{ fontWeight: 700, fontSize: 13, color: '#334155', marginBottom: 8 }}>
-        {room.piece.name}
+        部屋プロパティ
       </div>
+      <RoomInformationForm key={room.id} room={room} />
+      <p style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>素材: {room.piece.name}</p>
 
       <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
         <tbody>
@@ -123,7 +126,7 @@ export function PropertiesPanel() {
 }
 
 const panelStyle: React.CSSProperties = {
-  width: 200,
+  width: 240, flexShrink: 0,
   padding: 12,
   background: '#f8fafc',
   borderLeft: '1px solid #e2e8f0',

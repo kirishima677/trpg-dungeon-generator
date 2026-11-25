@@ -15,7 +15,7 @@ import { CorridorRenderer } from '../src/components/connections/CorridorRenderer
 import { ConnectionRenderer } from '../src/components/connections/ConnectionRenderer';
 import { GridCanvas } from '../src/components/canvas/GridCanvas';
 import { useDungeonStore } from '../src/store/dungeonStore';
-import { buildExportEnvelope, parseImport } from '../src/utils/exportImport';
+import { buildExportEnvelope, parseImport, SCHEMA_VERSION } from '../src/utils/exportImport';
 import { dungeonRepository } from '../src/repository/dungeonRepository';
 import { db } from '../src/db/db';
 
@@ -293,7 +293,7 @@ test('JSON, IndexedDB and history contain logical data only and reconstruct the 
   setup();
   const before = structuredClone(state().dungeon), expected = current().network;
   const envelope = buildExportEnvelope(before);
-  assert.equal(envelope.schemaVersion, '1.1.0');
+  assert.equal(envelope.schemaVersion, SCHEMA_VERSION);
   const imported = parseImport(JSON.parse(JSON.stringify(envelope))).dungeon;
   assert.deepEqual(scene(imported.rooms, imported.connections).network, expected);
   await dungeonRepository.saveMainEditorSnapshot(before);

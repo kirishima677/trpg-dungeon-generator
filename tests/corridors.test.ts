@@ -21,7 +21,7 @@ import { CorridorRenderer } from '../src/components/connections/CorridorRenderer
 import { ConnectionRenderer } from '../src/components/connections/ConnectionRenderer';
 import { PlacedRoomSvg } from '../src/components/pieces/PlacedRoomSvg';
 import { useDungeonStore } from '../src/store/dungeonStore';
-import { buildExportEnvelope, parseImport } from '../src/utils/exportImport';
+import { buildExportEnvelope, parseImport, SCHEMA_VERSION } from '../src/utils/exportImport';
 import { dungeonRepository } from '../src/repository/dungeonRepository';
 import { db } from '../src/db/db';
 
@@ -316,7 +316,7 @@ test('move/rotate/third-room/delete/undo/redo regenerate corridor geometry from 
 
 function assertLogicalOnly(dungeon: DungeonDocument) {
   assert.ok(!/"(?:corridor|corridorCells|corridorGeometry|assetId|drawings|openConnectorIds|cache|routingStatus)"\s*:/.test(JSON.stringify(dungeon)));
-  dungeon.rooms.forEach(r => assert.deepEqual(Object.keys(r).sort(), ['id', 'pieceId', 'piece', 'position', 'rotation'].sort()));
+  dungeon.rooms.forEach(r => assert.deepEqual(Object.keys(r).sort(), ['id', 'pieceId', 'piece', 'position', 'rotation', 'information'].sort()));
 }
 
 test('JSON and IndexedDB regenerate corridors and preserve manually placed corridor pieces', async () => {
@@ -327,7 +327,7 @@ test('JSON and IndexedDB regenerate corridors and preserve manually placed corri
   assert.equal(state().dungeon.rooms.length, 3);
   assert.deepEqual(state().dungeon, before);
   const envelope = buildExportEnvelope(before);
-  assert.equal(envelope.schemaVersion, '1.1.0');
+  assert.equal(envelope.schemaVersion, SCHEMA_VERSION);
   const imported = parseImport(JSON.parse(JSON.stringify(envelope))).dungeon;
   assert.deepEqual(cellsOf(scene(imported.rooms, imported.connections), before.connections[0].id), expected);
   await dungeonRepository.saveMainEditorSnapshot(before);
