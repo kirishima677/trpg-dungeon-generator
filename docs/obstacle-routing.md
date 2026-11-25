@@ -8,7 +8,8 @@ connections → connectionGeometry → obstacleAvoidingRouter
   → orthogonalRouter → 全区間の障害物・方向検査
       ├─ 安全: 候補をそのまま採用
       └─ 衝突: 接続口の外側セル → A* → セル中心を接続 → 簡略化・再検査
-  → RoutingResult → ConnectionRenderer → SVG Path
+  → RoutingResult → Corridor Geometry → CorridorRenderer（通常通路）
+                  → ConnectionRenderer（従来の線表示・警告）
 ```
 
 `Connection`、`PlacedRoom`、`DungeonDocument`、Store、Repository、IndexedDB、JSONスキーマは変更しない。
@@ -30,7 +31,9 @@ Setと行・列の疎な索引を使用し、遠く離れた部屋の間に巨�
 
 `connectionGeometry.ts` が既存の描画端点と回転後の外向き方向を計算する。
 `connectorOutsideCell` はそこから外側に隣接する1セルを開始・終了セルとして求める。
-そのセルが占有されていれば探索不能とする。接続口の外側には空きセルが必要。
+そのセルが占有されていれば探索不能とする。接続口の外側には原則として空きセルが必要。
+例外として、隣接部屋の対向接続口が同じ境界点で接している場合は `method: 'direct'` の正常な直接接続とする。
+この場合は経路が端点1点となり、通路セルを生成せず部屋の接続口を開口する。
 
 `aStarRouter.ts` は上下左右4方向、移動コスト1、マンハッタン距離のヒューリスティックを用いる。
 二分ヒープの優先順位は `f → h → 挿入順`、隣接セルの追加順は `north → east → south → west` で固定する。
@@ -39,6 +42,8 @@ Setと行・列の疎な索引を使用し、遠く離れた部屋の間に巨�
 探索結果のセル中心を描画座標へ変換し、先頭・末尾に実際のコネクター端点を付ける。
 既存の直交Routerから抽出した `simplifyRoutePoints` を共有し、重複点と同方向の連続区間を統合する。
 最後に外向き出発・外側からの到着、全区間の水平／垂直、部屋との衝突を再検査する。
+動的通路描画のため、再利用する直交経路にもセル中心への整合を要求する。
+整合しない候補は描画時に移動せず、Routing層でA*のセル中心経路へ置き換える。
 小数位置などで端点と外側セルを直交線で結べない場合は、斜め線を表示せず探索不能扱いとする。
 
 ## 探索制限
@@ -62,7 +67,7 @@ Setと行・列の疎な索引を使用し、遠く離れた部屋の間に巨�
 
 ## 失敗表示とAPI
 
-- `success`: 正常な経路と利用方式（`orthogonal` / `a-star`）を返す。
+- `success`: 正常な経路と利用方式（`orthogonal` / `a-star` / `direct`）を返す。
 - `unreachable`: 接続は残し、既存の直交経路を警告用の `fallback` として返す。
 - `limit-exceeded`: 同様に接続を残し、探索上限による失敗として返す。
 - `invalid`: 部屋ID・コネクターIDの参照先がない。経路探索の失敗と区別する。
@@ -77,7 +82,7 @@ Rendererは警告用経路を赤色で表示し、線の説明・アクセシブ
 
 ## 再計算と性能
 
-Rendererは `rooms` を依存に占有グリッドをメモ化し、`rooms`・`connections` が変わったときに経路を再計算する。
+`useConnectionScene` は `rooms` を依存に占有グリッドをメモ化し、`rooms`・`connections` が変わったときに経路を再計算する。
 接続対象以外の部屋の追加・移動・回転・削除も反映する。名前・Markdown・選択・ズーム・パンだけの変更では再探索しない。
 複数の接続に対して占有グリッドを作り直さず、Web Workerや独自スケジューラーは導入しない。
 

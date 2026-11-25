@@ -1,5 +1,5 @@
 import type { ConnectionGeometry } from '../connectionGeometry';
-import { directionVector } from '../../../utils/geometry';
+import { directionVector, oppositeDirection } from '../../../utils/geometry';
 import type { RoutePoint, ConnectionRoute } from './types';
 
 /** Drop repeated points and merge collinear legs that continue forward. */
@@ -29,4 +29,32 @@ export function followsConnectorDirections(route: ConnectionRoute, geometry: Con
     && last.x === geometry.to.position.x && last.y === geometry.to.position.y
     && (next.x - first.x) * from.x + (next.y - first.y) * from.y > 0
     && (previous.x - last.x) * to.x + (previous.y - last.y) * to.y > 0;
+}
+
+/** Opposed connectors meeting on one shared cell edge need no exterior cell. */
+export function isDirectConnection(geometry: ConnectionGeometry): boolean {
+  const { from, to } = geometry;
+  const vector = directionVector(from.direction);
+  return from.position.x === to.position.x && from.position.y === to.position.y
+    && to.direction === oppositeDirection(from.direction)
+    && Number.isInteger(from.position.x - (vector.x === 0 ? 0.5 : 0))
+    && Number.isInteger(from.position.y - (vector.y === 0 ? 0.5 : 0));
+}
+
+/** Cell-centred bends and exact edge anchors; never round a path in a renderer. */
+export function isCellCenteredRoute(route: ConnectionRoute, geometry: ConnectionGeometry): boolean {
+  const points = simplifyRoutePoints(route.points);
+  if (!followsConnectorDirections({ points }, geometry)) return false;
+  for (const endpoint of [geometry.from, geometry.to]) {
+    const vector = directionVector(endpoint.direction);
+    if (!Number.isSafeInteger(endpoint.position.x - (vector.x === 0 ? 0.5 : 0))
+      || !Number.isSafeInteger(endpoint.position.y - (vector.y === 0 ? 0.5 : 0))) return false;
+  }
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1], b = points[i];
+    if (a.y === b.y) {
+      if (a.x === b.x || !Number.isSafeInteger(a.y - 0.5)) return false;
+    } else if (a.x !== b.x || !Number.isSafeInteger(a.x - 0.5)) return false;
+  }
+  return points.slice(1, -1).every(p => Number.isSafeInteger(p.x - 0.5) && Number.isSafeInteger(p.y - 0.5));
 }

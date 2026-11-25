@@ -5,6 +5,6 @@ export interface GridPosition { x: number; y: number }
 export interface GridBounds { minX: number; minY: number; maxX: number; maxY: number }
 
 export type RoutingResult =
-  | { status: 'success'; route: ConnectionRoute; method: 'orthogonal' | 'a-star' }
+  | { status: 'success'; route: ConnectionRoute; method: 'orthogonal' | 'a-star' | 'direct' }
   | { status: 'unreachable' | 'limit-exceeded'; fallback: ConnectionRoute }
   | { status: 'invalid'; route: null };

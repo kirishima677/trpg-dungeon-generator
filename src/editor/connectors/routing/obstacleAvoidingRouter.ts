@@ -6,16 +6,19 @@ import type { SearchOptions } from './aStarRouter';
 import { isRouteClear } from './occupancyGrid';
 import type { OccupancyGrid } from './occupancyGrid';
 import { orthogonalRouter } from './orthogonalRouter';
-import { followsConnectorDirections, simplifyRoutePoints } from './routeUtils';
+import { isCellCenteredRoute, isDirectConnection, simplifyRoutePoints } from './routeUtils';
 
 /** Retain clear orthogonal routes; otherwise search between exterior cells. */
 export function obstacleAvoidingRouter(
   geometry: ConnectionGeometry, grid: OccupancyGrid, options: SearchOptions = {},
 ): RoutingResult {
+  if (isDirectConnection(geometry)) {
+    return { status: 'success', route: { points: [{ ...geometry.from.position }] }, method: 'direct' };
+  }
   const fallback = orthogonalRouter(geometry);
   const start = connectorOutsideCell(geometry.from), goal = connectorOutsideCell(geometry.to);
   if (grid.isOccupied(start) || grid.isOccupied(goal)) return { status: 'unreachable', fallback };
-  if (followsConnectorDirections(fallback, geometry) && isRouteClear(fallback, grid)) {
+  if (isCellCenteredRoute(fallback, geometry) && isRouteClear(fallback, grid)) {
     return { status: 'success', route: fallback, method: 'orthogonal' };
   }
   const search = aStarRoute(start, goal, grid, options);
@@ -29,7 +32,7 @@ export function obstacleAvoidingRouter(
   };
   // Validate the full route, including the connector-to-cell stubs, rather
   // than assuming an arbitrary imported connector lies on a valid grid edge.
-  return followsConnectorDirections(route, geometry) && isRouteClear(route, grid)
+  return isCellCenteredRoute(route, geometry) && isRouteClear(route, grid)
     ? { status: 'success', route, method: 'a-star' }
     : { status: 'unreachable', fallback };
 }
