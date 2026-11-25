@@ -4,6 +4,8 @@ import type { OccupancyGrid } from '../routing/occupancyGrid';
 import type { RoutingResult } from '../routing/types';
 import { generateCorridorCells } from './corridorGeometry';
 import type { CorridorGeometryResult } from './corridorGeometry';
+import { buildCorridorNetwork } from './corridorNetwork';
+import type { CorridorNetwork } from './corridorNetwork';
 
 export const MAX_TOTAL_CORRIDOR_CELLS = 16_384;
 
@@ -20,9 +22,10 @@ export interface ConnectionScene {
   drawings: ConnectionDrawing[];
   openConnectorIds: Map<string, Set<string>>;
   cache: Map<string, CachedCorridor>;
+  network: CorridorNetwork;
 }
 
-/** Bounded last-result cache per connection; never combine different connections. */
+/** Cache logical contributions, then derive the physical network separately. */
 export function prepareConnectionScene(
   connections: Connection[], rooms: PlacedRoom[], results: ReadonlyMap<string, RoutingResult>,
   grid: OccupancyGrid, previous: ReadonlyMap<string, CachedCorridor> = new Map(),
@@ -35,7 +38,8 @@ export function prepareConnectionScene(
     if (!openConnectorIds.has(roomId)) openConnectorIds.set(roomId, new Set());
     openConnectorIds.get(roomId)!.add(connectorId);
   };
-  for (const connection of connections) {
+  // Stable budget priority also keeps overflow behaviour independent of input order.
+  for (const connection of [...connections].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
     const result = results.get(connection.id);
     if (!result) continue;
     const drawing: ConnectionDrawing = { connection, result };
@@ -57,5 +61,8 @@ export function prepareConnectionScene(
     }
     drawings.push(drawing);
   }
-  return { drawings, openConnectorIds, cache };
+  const network = buildCorridorNetwork(drawings.flatMap(drawing =>
+    drawing.result.status === 'success' && drawing.corridor?.status === 'success'
+      ? [{ connectionId: drawing.connection.id, type: drawing.connection.type, cells: drawing.corridor.cells }] : []));
+  return { drawings, openConnectorIds, cache, network };
 }

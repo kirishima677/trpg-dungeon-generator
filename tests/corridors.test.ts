@@ -195,7 +195,7 @@ test('all four room rotations regenerate corridor cells and the correct room ope
   }
 });
 
-test('separate crossing connections retain separate masks and never create a logical junction', () => {
+test('crossing contributions retain their own masks while the derived network merges without changing logical connections', () => {
   const piece: Piece = { id: 'unit', name: 'unit', shape: 'rectangle', cells: [{ x: 0, y: 0 }],
     connectors: ['north', 'east', 'south', 'west'].map(direction => ({ id: direction, direction, width: 1, kind: 'door', position: { x: 0, y: 0 } })) as Piece['connectors'] };
   const rooms = [placed('a', -2, 0, piece), placed('b', 3, 0, piece), placed('top', 0, -2, piece), placed('bottom', 0, 3, piece)];
@@ -207,6 +207,7 @@ test('separate crossing connections retain separate masks and never create a log
   const prepared = scene(rooms, connections);
   assert.equal(cellsOf(prepared).find(c => c.x === 0 && c.y === 0)?.connections, EAST | WEST);
   assert.equal(cellsOf(prepared, 'vertical').find(c => c.x === 0 && c.y === 0)?.connections, NORTH | SOUTH);
+  assert.equal(prepared.network.byCoordinate.get('0,0')?.[0].connections, 15);
   assert.deepEqual(connections, before);
 });
 
@@ -273,6 +274,10 @@ test('total scene budget bounds cell expansion and falls back to lines for remai
   const prepared = scene(rooms, connections);
   assert.equal(prepared.drawings.reduce((sum, d) => sum + (d.corridor?.status === 'success' ? d.corridor.cells.length : 0), 0), MAX_TOTAL_CORRIDOR_CELLS);
   assert.equal(prepared.drawings.at(-1)?.corridor?.status, 'limit-exceeded');
+  assert.equal(prepared.network.cells.length, MAX_TOTAL_CORRIDOR_CELLS);
+  const reversed = scene(rooms, [...connections].reverse());
+  assert.deepEqual(reversed.network, prepared.network);
+  assert.equal(reversed.drawings.find(d => d.connection.id === 'c4')?.corridor?.status, 'limit-exceeded');
   const overlay = renderToStaticMarkup(createElement(ConnectionRenderer, { scene: prepared, layer: 'overlays' }));
   assert.match(overlay, /通路セルの展開上限/);
   assert.match(overlay, /data-connection-id="c4"/);

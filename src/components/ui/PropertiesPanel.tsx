@@ -4,14 +4,32 @@ import { useDungeonStore } from '../../store';
 import { getWorldConnectors } from '../../utils/geometry';
 
 export function PropertiesPanel() {
-  const { dungeon, selectedRoomId, rotateRoom, deleteRoom, selectedConnectionId, deleteConnection } = useDungeonStore(useShallow(s => ({
+  const { dungeon, selectedRoomId, rotateRoom, deleteRoom, selectedConnectionId, deleteConnection, selectConnection } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
     selectedRoomId: s.selectedRoomId,
     rotateRoom: s.rotateRoom,
     deleteRoom: s.deleteRoom,
     selectedConnectionId: s.selectedConnectionId,
     deleteConnection: s.deleteConnection,
+    selectConnection: s.selectConnection,
   })));
+
+  const picker = dungeon.connections.length > 0 && (
+    <div style={{ marginBottom: 12 }}>
+      <select aria-label="接続を選択" value={selectedConnectionId ?? ''}
+        onChange={e => selectConnection(e.target.value || null)} style={{ width: '100%', fontSize: 12 }}>
+        <option value="">接続を選択…</option>
+        {dungeon.connections.map((c, index) => (
+          <option key={c.id} value={c.id}>
+            接続{index + 1} / {c.type} / {c.id.slice(0, 8)}
+          </option>
+        ))}
+      </select>
+      <p style={{ fontSize: 11, color: '#64748b', marginTop: 6 }}>
+        共有セルは再クリックで接続を切替。削除は選択後に実行できます。
+      </p>
+    </div>
+  );
 
   const connection = dungeon.connections.find(c => c.id === selectedConnectionId);
   if (connection) {
@@ -23,6 +41,7 @@ export function PropertiesPanel() {
     };
     return (
       <div style={panelStyle}>
+        {picker}
         <p style={{ fontWeight: 700, marginBottom: 8 }}>接続線</p>
         <p style={{ fontSize: 12 }}>種類: {connection.type}</p>
         <p style={{ fontSize: 12, margin: '8px 0' }}>{endpointLabel(connection.fromRoomId, connection.fromConnectorId)}</p>
@@ -39,6 +58,7 @@ export function PropertiesPanel() {
   if (!room) {
     return (
       <div style={panelStyle}>
+        {picker}
         <p style={{ color: '#94a3b8', fontSize: 12 }}>部屋または接続線を選択してください</p>
       </div>
     );
@@ -48,6 +68,7 @@ export function PropertiesPanel() {
 
   return (
     <div style={panelStyle}>
+      {picker}
       <div style={{ fontWeight: 700, fontSize: 13, color: '#334155', marginBottom: 8 }}>
         {room.piece.name}
       </div>
