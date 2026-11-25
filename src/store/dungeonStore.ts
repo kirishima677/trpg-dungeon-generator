@@ -6,6 +6,7 @@ import type { Connection, ConnectionType, ConnectorEndpoint, DungeonDocument, Pl
 import { canConnect, endpointExists, usesEndpoint } from '../model/connections';
 import { getWorldCells } from '../utils/geometry';
 import { SCHEMA_VERSION } from '../utils/exportImport';
+import { pieceReferencesFrozen } from '../editor/pieces/pieceReferences';
 
 const MAX_HISTORY = 50;
 
@@ -134,6 +135,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
 
   // ── Dungeon ───────────────────────────────────────────────────────────────
   setDungeon(dungeon) {
+    if (pieceReferencesFrozen()) throw new Error('ピースの参照確認中です。もう一度操作してください。');
     set({
       dungeon: normalizeDungeonDocument(dungeon),
       selectedRoomId: null,
@@ -163,6 +165,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
   // (not exposed but used via closures below)
 
   addRoom(room) {
+    if (pieceReferencesFrozen()) return;
     const { dungeon, undoStack } = get();
     if (hasCollision(room, dungeon.rooms)) return; // silent collision guard
 
@@ -295,6 +298,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
   },
 
   setPendingPiece(piece) {
+    if (pieceReferencesFrozen()) return;
     set({ pendingPiece: piece, editorMode: piece ? 'place' : 'select',
       pendingConnector: null, selectedConnectionId: null, selectedRoomId: null });
   },
@@ -310,6 +314,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
 
   // ── Undo / Redo ───────────────────────────────────────────────────────────
   undo() {
+    if (pieceReferencesFrozen()) return;
     const { undoStack, dungeon, redoStack } = get();
     if (undoStack.length === 0) return;
     const prev = undoStack[undoStack.length - 1];
@@ -324,6 +329,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
   },
 
   redo() {
+    if (pieceReferencesFrozen()) return;
     const { redoStack, dungeon, undoStack } = get();
     if (redoStack.length === 0) return;
     const next = redoStack[0];

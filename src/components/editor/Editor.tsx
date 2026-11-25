@@ -16,6 +16,8 @@ import {
   isMarkdownSavedEvent,
 } from '../../editor/markdown/events';
 import { openMarkdownEditorWindow } from '../../editor/markdown/markdownWindow';
+import { openEditorWindow } from '../../editor/editorWindows';
+import { collectPieceReferences, registerPieceReferenceReader } from '../../editor/pieces/pieceReferences';
 
 export function Editor() {
   const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom,
@@ -40,6 +42,20 @@ export function Editor() {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const currentDungeonIdRef = useRef(dungeon.id);
+  const [referenceReady, setReferenceReady] = React.useState(false);
+  const [windowError, setWindowError] = React.useState('');
+
+  useEffect(() => {
+    let disposed = false, cleanup: (() => void) | undefined;
+    void registerPieceReferenceReader(() => {
+      const state = useDungeonStore.getState();
+      return collectPieceReferences([state.dungeon, ...state.undoStack, ...state.redoStack], state.pendingPiece);
+    }).then(stop => {
+      if (disposed) stop();
+      else { cleanup = stop; setReferenceReady(true); }
+    }).catch(() => setWindowError('ピース参照の登録に失敗しました。ページを再読み込みしてください。'));
+    return () => { disposed = true; cleanup?.(); };
+  }, []);
 
   useEffect(() => {
     currentDungeonIdRef.current = dungeon.id;
@@ -124,12 +140,16 @@ export function Editor() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <div inert={!referenceReady} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Menu bar */}
       <MenuBar />
 
       {/* Toolbar */}
-      <Toolbar onOpenMarkdown={handleOpenMarkdown} />
+      <Toolbar onOpenMarkdown={handleOpenMarkdown} onOpenPieceEditor={() => {
+        const opened = openEditorWindow('piece-editor-window', { pieceEditor: '1' }, 'popup=yes,width=1200,height=850');
+        setWindowError(opened ? '' : 'ピースエディタを開けませんでした。ポップアップを許可してください。');
+      }} />
+      {windowError && <p role="alert">{windowError}</p>}
 
       {/* Main layout */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>

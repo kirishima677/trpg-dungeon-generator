@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import { dungeonRepository } from '../../repository/dungeonRepository';
+import { pieceRepository } from '../../repository/pieceRepository';
 import type { DungeonDocument } from '../../model/types';
 import {
   buildExportEnvelope,
@@ -75,10 +76,11 @@ export function MenuBar() {
       const text = await file.text();
       const raw = JSON.parse(text);
       const envelope = parseImport(raw);
+      await pieceRepository.registerDungeonPieces(envelope.dungeon);
       setDungeon(envelope.dungeon);
       flash('インポートしました ✓');
-    } catch {
-      flash('インポートに失敗しました ✗');
+    } catch (error) {
+      flash(error instanceof Error ? error.message : 'インポートに失敗しました ✗');
     } finally {
       // reset so same file can be re-imported
       if (fileRef.current) fileRef.current.value = '';

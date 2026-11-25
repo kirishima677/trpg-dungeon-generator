@@ -2,6 +2,9 @@ import { DEFAULT_PIECES } from '../../model';
 import type { Piece } from '../../model/types';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
+import { usePieceLibrary } from '../pieces/usePieceLibrary';
+import { pieceRepository } from '../../repository/pieceRepository';
+import { withPieceLibraryRead } from '../../editor/pieces/pieceReferences';
 
 const THUMB_SIZE = 80;
 const CELL = 12; // px per cell in thumbnail
@@ -53,7 +56,8 @@ export function PieceSidebar() {
     pendingPiece: s.pendingPiece,
   })));
 
-  const pieces = DEFAULT_PIECES;
+  const library = usePieceLibrary();
+  const pieces = [...DEFAULT_PIECES, ...library.pieces];
 
   return (
     <div
@@ -72,14 +76,22 @@ export function PieceSidebar() {
         ピースライブラリ
       </div>
 
+      {library.error && <p role="alert">{library.error}</p>}
+
       {pieces.map(piece => {
         const isSelected = pendingPiece?.id === piece.id;
         return (
           <button
             key={piece.id}
-            onClick={() =>
-              isSelected ? setPendingPiece(null) : setPendingPiece(piece)
-            }
+            onClick={() => {
+              if (isSelected) setPendingPiece(null);
+              else if (DEFAULT_PIECES.some(p => p.id === piece.id)) setPendingPiece(piece);
+              else void withPieceLibraryRead(async () => {
+                const latest = await pieceRepository.get(piece.id);
+                if (latest) setPendingPiece(latest);
+                else await library.reload();
+              }).catch(() => { void library.reload(); });
+            }}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -97,6 +109,7 @@ export function PieceSidebar() {
             <span style={{ fontSize: 11, color: '#475569', lineHeight: 1.3 }}>
               {piece.name}
             </span>
+            <span style={{ fontSize: 10, color: '#64748b' }}>{DEFAULT_PIECES.some(p => p.id === piece.id) ? '標準' : 'ユーザー定義'}</span>
           </button>
         );
       })}
