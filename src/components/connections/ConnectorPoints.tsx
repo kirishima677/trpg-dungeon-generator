@@ -4,7 +4,7 @@ import { getWorldConnectors } from '../../utils/geometry';
 import { connectorPoint } from '../../editor/connectors/connectionGeometry';
 import { usesEndpoint } from '../../model/connections';
 
-const GRID_SIZE = 40;
+import { GRID_SIZE } from '../../editor/grid';
 
 export function ConnectorPoints() {
   const { dungeon, editorMode, pendingConnector, chooseConnector } = useDungeonStore(useShallow(s => ({

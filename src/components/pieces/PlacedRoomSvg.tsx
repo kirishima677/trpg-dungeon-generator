@@ -4,15 +4,17 @@ import { getWorldCells, getWorldConnectors } from '../../utils/geometry';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import { connectorPoint } from '../../editor/connectors/connectionGeometry';
-
-const GRID_SIZE = 40; // px per cell — must match GridCanvas
+import { GRID_SIZE } from '../../editor/grid';
+import { DIRECTION_BITS } from '../../editor/connectors/corridor/directions';
+import { corridorWalls } from '../../editor/connectors/corridor/corridorShape';
 
 interface PlacedRoomSvgProps {
   room: PlacedRoom;
   isSelected: boolean;
+  openConnectorIds?: ReadonlySet<string>;
 }
 
-export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
+export function PlacedRoomSvg({ room, isSelected, openConnectorIds }: PlacedRoomSvgProps) {
   const { selectRoom, moveRoom, deleteRoom, editorMode } = useDungeonStore(useShallow(s => ({
     selectRoom: s.selectRoom,
     moveRoom: s.moveRoom,
@@ -27,6 +29,12 @@ export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
 
   const cells = getWorldCells(room);
   const connectors = getWorldConnectors(room);
+  const openings = new Map<string, number>();
+  for (const connector of connectors) {
+    if (!openConnectorIds?.has(connector.id)) continue;
+    const key = `${connector.worldPosition.x},${connector.worldPosition.y}`;
+    openings.set(key, (openings.get(key) ?? 0) | DIRECTION_BITS[connector.worldDirection]);
+  }
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -85,7 +93,17 @@ export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
       style={{ cursor: editorMode === 'delete' ? 'not-allowed' : isDragging ? 'grabbing' : 'grab' }}
     >
       {/* Room cells */}
-      {cells.map(c => (
+      {cells.map(c => {
+        const openMask = openings.get(`${c.x},${c.y}`) ?? 0;
+        if (openMask) return (
+          <g key={`${c.x}-${c.y}`} data-room-opening={openMask}>
+            <rect x={c.x * GRID_SIZE} y={c.y * GRID_SIZE} width={GRID_SIZE} height={GRID_SIZE} fill={fillColor} />
+            <path d={corridorWalls({ ...c, connections: openMask }).map(wall =>
+              `M ${wall.x1 * GRID_SIZE} ${wall.y1 * GRID_SIZE} L ${wall.x2 * GRID_SIZE} ${wall.y2 * GRID_SIZE}`).join(' ')}
+              fill="none" stroke={strokeColor} strokeWidth={strokeWidth} />
+          </g>
+        );
+        return (
         <rect
           key={`${c.x}-${c.y}`}
           x={c.x * GRID_SIZE}
@@ -96,7 +114,8 @@ export function PlacedRoomSvg({ room, isSelected }: PlacedRoomSvgProps) {
           stroke={strokeColor}
           strokeWidth={strokeWidth}
         />
-      ))}
+        );
+      })}
 
       {/* Room label */}
       {(() => {

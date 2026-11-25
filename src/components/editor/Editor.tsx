@@ -3,6 +3,7 @@ import { GridCanvas } from '../canvas/GridCanvas';
 import { PlacedRoomSvg } from '../pieces/PlacedRoomSvg';
 import { PiecePlacementGhost } from '../pieces/PiecePlacementGhost';
 import { ConnectionRenderer } from '../connections/ConnectionRenderer';
+import { useConnectionScene } from '../connections/useConnectionScene';
 import { ConnectorPoints } from '../connections/ConnectorPoints';
 import { PieceSidebar } from '../sidebar/PieceSidebar';
 import { Toolbar } from '../toolbar/Toolbar';
@@ -33,6 +34,8 @@ export function Editor() {
     setEditorMode: s.setEditorMode,
     editorMode: s.editorMode,
   })));
+
+  const connectionScene = useConnectionScene(dungeon.rooms, dungeon.connections);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,16 +143,18 @@ export function Editor() {
           onClick={onCanvasClick}
         >
           <GridCanvas width={size.w} height={size.h} svgRef={svgRef}>
+            <ConnectionRenderer scene={connectionScene} layer="corridors" />
             {/* Rendered rooms */}
             {dungeon.rooms.map(room => (
               <PlacedRoomSvg
                 key={room.id}
                 room={room}
                 isSelected={room.id === selectedRoomId}
+                openConnectorIds={connectionScene.openConnectorIds.get(room.id)}
               />
             ))}
 
-            <ConnectionRenderer />
+            <ConnectionRenderer scene={connectionScene} layer="overlays" />
             <ConnectorPoints />
 
             {/* Ghost for piece placement */}

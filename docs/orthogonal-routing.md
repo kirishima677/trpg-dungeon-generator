@@ -1,11 +1,16 @@
 # 直交コネクタールーティング
 
+現在のエディタでは [障害物回避Router](obstacle-routing.md) が既定で、本書の直交Routerを候補経路の生成に再利用する。
+以下は障害物検査前の直交経路を計算する責務と、その基本テストの説明。
+通路の床・壁を生成する際は曲がり角がセル中心にある経路を必要とするため、候補が整合しない場合はRouting層でA*の経路を取得する。
+描画層で端点や曲がり角を丸めることはしない。最終描画は [動的通路描画](dynamic-corridors.md) を参照。
+
 ## 責務分離
 
 ```text
 DungeonDocument.connections
   → connectionGeometry（現在の部屋から端点・回転後の方向を計算）
-  → routeConnection / ConnectionRouter
+  → ConnectionRouter（明示的な直交Router呼び出し）
   → orthogonalRouter
   → ConnectionRoute.points（ワールド座標、グリッドセル単位）
   → ConnectionRenderer（ピクセル座標へ変換してSVG Pathを描画）
@@ -18,9 +23,10 @@ DungeonDocument.connections
 `connectionGeometry.ts` は既存の `getWorldConnectors` と `connectorPoint` を再利用し、端点と回転後の方向を返す。
 位置だけ必要な既存呼び出し向けに `connectionEndpoints` も維持する。
 
-`routing/connectionRouter.ts` は派生型 `RoutePoint` / `ConnectionRoute` とRouter関数の境界を定義する。
-`routeConnection` の第3引数でRouterを差し替えられる。既定は `orthogonalRouter`。
-参照先の部屋・コネクターがない場合は `null` を返して描画を省略する。
+`routing/types.ts` は派生型 `RoutePoint` / `ConnectionRoute` を定義し、`connectionRouter.ts` からも再公開する。
+`routeConnection` の第3引数で明示的なRouterを指定する従来APIは維持する。
+指定を省略すると障害物回避を適用し、経路を確保できない場合や参照先がない場合は `null` を返す。
+エディタは失敗状態も取得するため `routeConnections` / `resolveConnectionRoute` を利用する。
 将来のRouterはこの境界を利用でき、Rendererに経路探索を追加する必要はない。
 
 ## 経路の選択
@@ -56,5 +62,6 @@ DungeonDocument.connections
 
 ## MVPの範囲
 
-他の部屋・接続線を横切る経路を許容する。最短経路の保証は行わない。
-障害物回避、交差回避、A*、Waypoint、手動ルーティング、通路幅を考慮した探索、通路アセット生成は今後の拡張とする。
+単体の直交Routerは障害物を検査せず、候補経路の最短性も保証しない。
+エディタは候補の全区間を検査し、衝突があればA*で迂回する。
+交差回避、Waypoint、手動ルーティング、通路幅を考慮した探索、通路アセット生成は今後の拡張とする。

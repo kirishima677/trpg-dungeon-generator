@@ -8,6 +8,15 @@ import type {
 
 // ─── Rotation helpers ─────────────────────────────────────────────────────────
 
+export function directionVector(direction: ConnectorDirection): { x: number; y: number } {
+  switch (direction) {
+    case 'north': return { x: 0, y: -1 };
+    case 'east': return { x: 1, y: 0 };
+    case 'south': return { x: 0, y: 1 };
+    case 'west': return { x: -1, y: 0 };
+  }
+}
+
 /** Rotate a grid cell by `rotation` degrees around (0,0) */
 export function rotateCell(
   x: number,

@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
-const GRID_SIZE = 40; // px per cell
+import { GRID_SIZE } from '../../editor/grid';
 
 interface GridCanvasProps {
   width: number;

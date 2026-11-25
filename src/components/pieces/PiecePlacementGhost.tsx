@@ -5,7 +5,7 @@ import { getWorldCells } from '../../utils/geometry';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 
-const GRID_SIZE = 40;
+import { GRID_SIZE } from '../../editor/grid';
 const ROTATIONS: Rotation[] = [0, 90, 180, 270];
 
 interface PiecePlacementGhostProps {
