@@ -2,6 +2,8 @@ import type { DungeonDocument, ExportEnvelope } from '../model/types';
 import { normalizeDungeonDocument } from '../model/normalizeDungeon';
 import type { DungeonDocumentInput } from '../model/normalizeDungeon';
 import { normalizeConnections } from '../model/connections';
+import { isStandardPiece, normalizePiece, pieceStructure } from '../editor/pieces/pieceDefinition';
+import { DEFAULT_PIECES } from '../model/pieceLibrary';
 
 export const SCHEMA_VERSION = '1.1.0';
 export const FORMAT_ID = 'trpg-dungeon-generator' as const;
@@ -46,6 +48,7 @@ export function parseImport(raw: unknown): ExportEnvelope {
     throw new Error('Invalid dungeon document');
   }
   const roomIds = new Set<string>();
+  const pieceDefinitions = new Map<string, string>();
   for (const room of dungeon.rooms) {
     if (!room || typeof room.id !== 'string' || roomIds.has(room.id)
       || !room.position || !Number.isFinite(room.position.x) || !Number.isFinite(room.position.y)
@@ -62,6 +65,15 @@ export function parseImport(raw: unknown): ExportEnvelope {
         || !connector.position || !Number.isFinite(connector.position.x) || !Number.isFinite(connector.position.y)
         || !['north', 'east', 'south', 'west'].includes(connector.direction)) throw new Error('Invalid connector');
       connectorIds.add(connector.id);
+    }
+    if (room.pieceId !== room.piece.id) throw new Error('Invalid piece reference');
+    if (isStandardPiece(room.pieceId)) {
+      const standard = DEFAULT_PIECES.find(p => p.id === room.pieceId)!;
+      if (pieceStructure(room.piece) !== pieceStructure(standard)) throw new Error('Invalid standard piece definition');
+    } else {
+      const piece = normalizePiece(room.piece), signature = pieceStructure(piece);
+      if (pieceDefinitions.has(piece.id) && pieceDefinitions.get(piece.id) !== signature) throw new Error('Conflicting piece definitions');
+      pieceDefinitions.set(piece.id, signature);
     }
   }
   if (dungeon.connections !== undefined

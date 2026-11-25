@@ -19,7 +19,7 @@ export interface Connector {
 
 // ─── Piece (template / library entry) ────────────────────────────────────────
 
-export type PieceShape = 'rectangle' | 'l-shape' | 'corridor';
+export type PieceShape = 'rectangle' | 'l-shape' | 'corridor' | 'custom';
 
 /**
  * A reusable piece template stored in the piece library.
