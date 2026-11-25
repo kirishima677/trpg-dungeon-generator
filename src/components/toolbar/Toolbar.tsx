@@ -38,9 +38,10 @@ function ToolButton({ active, onClick, title, children }: ToolButtonProps) {
 interface ToolbarProps {
   onOpenMarkdown: () => void;
   onOpenPieceEditor: () => void;
+  onOpenPublishing: () => void;
 }
 
-export function Toolbar({ onOpenMarkdown, onOpenPieceEditor }: ToolbarProps) {
+export function Toolbar({ onOpenMarkdown, onOpenPieceEditor, onOpenPublishing }: ToolbarProps) {
   const {
     editorMode,
     setEditorMode,
@@ -169,6 +170,7 @@ export function Toolbar({ onOpenMarkdown, onOpenPieceEditor }: ToolbarProps) {
       >
         Markdown
       </button>
+      <button onClick={onOpenPublishing} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 12px', background: '#f1f5f9', cursor: 'pointer' }}>出版</button>
       <button onClick={onOpenPieceEditor} style={{ border: '1px solid #cbd5e1', borderRadius: 8,
         padding: '8px 12px', background: '#f8fafc', color: '#0f172a', cursor: 'pointer', fontWeight: 600 }}>
         ピースエディタ
