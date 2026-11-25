@@ -4,24 +4,48 @@ import type { CorridorCell } from '../../editor/connectors/corridor/corridorGeom
 import { corridorWalls } from '../../editor/connectors/corridor/corridorShape';
 
 interface CorridorRendererProps {
-  cells: CorridorCell[];
+  cells: readonly CorridorCell[];
   isSelected: boolean;
   interactive: boolean;
+  selectedCellKeys?: ReadonlySet<string>;
 }
 
 /** Shapes only. Geometry is calculated outside React and shared by all layers. */
-export const CorridorRenderer = memo(function CorridorRenderer({ cells, isSelected, interactive }: CorridorRendererProps) {
-  const paths = useMemo(() => ({
-    floor: cells.map(cell => `M ${cell.x * GRID_SIZE} ${cell.y * GRID_SIZE} h ${GRID_SIZE} v ${GRID_SIZE} h ${-GRID_SIZE} Z`).join(' '),
-    walls: cells.flatMap(corridorWalls).map(wall =>
-      `M ${wall.x1 * GRID_SIZE} ${wall.y1 * GRID_SIZE} L ${wall.x2 * GRID_SIZE} ${wall.y2 * GRID_SIZE}`).join(' '),
-  }), [cells]);
+export const CorridorRenderer = memo(function CorridorRenderer({ cells, isSelected, interactive, selectedCellKeys }: CorridorRendererProps) {
+  const shapes = useMemo(() => {
+    const walls = new Map<string, { d: string; cellKeys: Set<string> }>();
+    const floors = cells.map(cell => {
+      const key = `${cell.x},${cell.y}`;
+      for (const wall of corridorWalls(cell)) {
+        const edge = `${wall.x1},${wall.y1},${wall.x2},${wall.y2}`;
+        if (!walls.has(edge)) walls.set(edge, {
+          d: `M ${wall.x1 * GRID_SIZE} ${wall.y1 * GRID_SIZE} L ${wall.x2 * GRID_SIZE} ${wall.y2 * GRID_SIZE}`,
+          cellKeys: new Set(),
+        });
+        walls.get(edge)!.cellKeys.add(key);
+      }
+      return { key, d: `M ${cell.x * GRID_SIZE} ${cell.y * GRID_SIZE} h ${GRID_SIZE} v ${GRID_SIZE} h ${-GRID_SIZE} Z` };
+    });
+    return { floors, walls: [...walls.values()] };
+  }, [cells]);
+  const paths = useMemo(() => {
+    const floors = ['', ''], walls = ['', ''];
+    for (const floor of shapes.floors) {
+      floors[isSelected || selectedCellKeys?.has(floor.key) ? 1 : 0] += `${floor.d} `;
+    }
+    for (const wall of shapes.walls) {
+      walls[isSelected || [...wall.cellKeys].some(key => selectedCellKeys?.has(key)) ? 1 : 0] += `${wall.d} `;
+    }
+    return { floors, walls };
+  }, [shapes, isSelected, selectedCellKeys]);
   return (
     <>
-      <path data-corridor-floor="true" d={paths.floor} fill={isSelected ? '#bfdbfe' : '#e0e7ff'}
-        pointerEvents={interactive ? 'fill' : 'none'} />
-      <path data-corridor-walls="true" d={paths.walls} fill="none" stroke={isSelected ? '#2563eb' : '#475569'}
-        strokeWidth={isSelected ? 2.5 : 1.5} strokeLinejoin="round" pointerEvents="none" />
+      {paths.floors.map((d, selected) => d && <path key={`floor-${selected}`} data-corridor-floor="true"
+        data-highlighted={Boolean(selected)} d={d.trim()} fill={selected ? '#bfdbfe' : '#e0e7ff'}
+        pointerEvents={interactive ? 'fill' : 'none'} />)}
+      {paths.walls.map((d, selected) => d && <path key={`wall-${selected}`} data-corridor-walls="true"
+        data-highlighted={Boolean(selected)} d={d.trim()} fill="none" stroke={selected ? '#2563eb' : '#475569'}
+        strokeWidth={selected ? 2.5 : 1.5} strokeLinejoin="round" pointerEvents="none" />)}
     </>
   );
 });

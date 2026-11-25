@@ -3,7 +3,7 @@ import type React from 'react';
 import { useDungeonStore } from '../../store';
 import { GRID_SIZE } from '../../editor/grid';
 import type { ConnectionScene } from '../../editor/connectors/corridor/connectionScene';
-import { CorridorRenderer } from './CorridorRenderer';
+import { CorridorNetworkRenderer } from './CorridorNetworkRenderer';
 
 interface ConnectionRendererProps {
   scene: ConnectionScene;
@@ -18,13 +18,15 @@ export function ConnectionRenderer({ scene, layer }: ConnectionRendererProps) {
     deleteConnection: s.deleteConnection,
   })));
 
+  if (layer === 'corridors') return <CorridorNetworkRenderer network={scene.network} />;
+
   return (
-    <g aria-label={layer === 'corridors' ? '通路の床と壁' : '接続線・警告'}>
+    <g aria-label="接続線・警告">
       {scene.drawings.map(({ connection, result, corridor }) => {
         if (result.status === 'invalid') return null;
         const visibleCorridor = corridor?.status === 'success' ? corridor : null;
         const hasFloor = visibleCorridor && visibleCorridor.cells.length > 0;
-        if ((layer === 'corridors') !== Boolean(hasFloor)) return null;
+        if (hasFloor) return null;
         const failed = result.status !== 'success';
         const route = result.status === 'success' ? result.route : result.fallback;
         const warning = result.status === 'unreachable' ? '経路を確保できません。接続口の外側や障害物を確認してください。'
@@ -50,13 +52,6 @@ export function ConnectionRenderer({ scene, layer }: ConnectionRendererProps) {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); choose(); }
           },
         };
-        if (hasFloor) return (
-          <g key={connection.id} data-connection-id={connection.id} data-routing-status={result.status}
-            data-corridor-status="success" data-cell-count={visibleCorridor.cells.length} {...controls}>
-            <title>通路 — クリックで接続全体を選択、削除モードで削除</title>
-            <CorridorRenderer cells={visibleCorridor.cells} isSelected={selected} interactive={editorMode !== 'place'} />
-          </g>
-        );
         const color = failed ? '#dc2626' : warning ? '#b45309' : selected ? '#2563eb'
           : connection.type === 'secret' ? '#7c3aed' : '#475569';
         return (
