@@ -5,8 +5,8 @@
 - `model/types.ts`: `Connector` はテンプレート内の接続口、`PlacedRoom` は配置状態、`Connection` は接続対象のIDと種類を保持する。
 - `model/connections.ts`: 参照先の存在、異なる部屋、1ポイント1接続、接続IDの一意性を検証する。
 - `editor/connectors/connectionGeometry.ts`: 既存の `getWorldConnectors` による回転・移動変換を利用し、外向きセル辺の中央を端点として計算する。
-- `editor/connectors/routing/`: 端点と方向から一時的な直交経路を計算する。
-- `components/connections/ConnectionRenderer.tsx`: Routing層の結果をSVG Pathで描画する。隠し通路は破線にする。
+- `editor/connectors/routing/`: 実際の占有セルを考慮し、直交経路の検査と必要に応じたA*で一時的な経路を計算する。
+- `components/connections/ConnectionRenderer.tsx`: Routing層の結果をSVG Pathで描画する。隠し通路は破線、経路探索失敗は赤色で表示する。配置に依存する計算はメモ化する。
 - `components/connections/ConnectorPoints.tsx`: 接続モードのポイント選択・状態表示を担当する。
 - `store/dungeonStore.ts`: 2クリックでの作成、線の選択・削除、部屋削除に伴う接続削除、履歴を管理する。
 - `repository/dungeonRepository.ts`: 部屋と接続を一緒に保存する。Markdownは既存の別ウィンドウの保存経路を維持する。
@@ -51,4 +51,6 @@ IndexedDBの接続フィールドはインデックスを持たないため、DB
 7. 線を選択して「接続を削除」、Undoで復元、Redoで再削除する。
 8. 削除モードで線を削除できること、部屋を削除すると接続も削除されUndoで両方戻ることを確認する。
 
-描画は [直交ルーティング](orthogonal-routing.md) に対応。線が部屋を横切る場合があり、障害物回避・通路ピース生成・高度な接続編集は将来拡張とする。
+描画は [直交ルーティング](orthogonal-routing.md) と [障害物回避](obstacle-routing.md) に対応。
+経路を生成できない場合の赤い線は警告用であり、正常な通行経路ではない。
+通路ピース生成・高度な接続編集・接続線同士の交差回避は将来拡張とする。

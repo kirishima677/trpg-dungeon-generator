@@ -1,5 +1,5 @@
 import type { Connection, ConnectorDirection, PlacedRoom } from '../../model/types';
-import { getWorldConnectors } from '../../utils/geometry';
+import { directionVector, getWorldConnectors } from '../../utils/geometry';
 
 export interface WorldPoint { x: number; y: number }
 
@@ -19,9 +19,17 @@ export function connectorPoint(connector: {
   worldDirection: ConnectorDirection;
 }): WorldPoint {
   const { x, y } = connector.worldPosition;
-  const dx = connector.worldDirection === 'east' ? 0.5 : connector.worldDirection === 'west' ? -0.5 : 0;
-  const dy = connector.worldDirection === 'south' ? 0.5 : connector.worldDirection === 'north' ? -0.5 : 0;
-  return { x: x + 0.5 + dx, y: y + 0.5 + dy };
+  const direction = directionVector(connector.worldDirection);
+  return { x: x + 0.5 + direction.x * 0.5, y: y + 0.5 + direction.y * 0.5 };
+}
+
+/** Adjacent exterior cell, not the occupied connector cell inside the room. */
+export function connectorOutsideCell(endpoint: ConnectionEndpointGeometry): WorldPoint {
+  const vector = directionVector(endpoint.direction);
+  return {
+    x: Math.floor(endpoint.position.x + vector.x * 0.5),
+    y: Math.floor(endpoint.position.y + vector.y * 0.5),
+  };
 }
 
 /** Derived on demand; never stored in the document or undo history. */

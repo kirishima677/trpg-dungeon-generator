@@ -1,36 +1,14 @@
-import type { ConnectorDirection } from '../../../model/types';
 import type { ConnectionGeometry } from '../connectionGeometry';
-import type { ConnectionRoute, RoutePoint } from './connectionRouter';
+import type { ConnectionRoute, RoutePoint } from './types';
+import { directionVector } from '../../../utils/geometry';
+import { simplifyRoutePoints } from './routeUtils';
 
 /** Exit/detour clearance in grid cells, independent of SVG pixels and zoom. */
 export const CONNECTOR_EXIT_GRID_CELLS = 1;
 
-const DIRECTION_VECTORS: Record<ConnectorDirection, RoutePoint> = {
-  north: { x: 0, y: -1 }, south: { x: 0, y: 1 },
-  east: { x: 1, y: 0 }, west: { x: -1, y: 0 },
-};
-
 function outerRail(a: number, b: number, sign: number): number {
   return sign > 0 ? Math.max(a, b) + CONNECTOR_EXIT_GRID_CELLS
     : Math.min(a, b) - CONNECTOR_EXIT_GRID_CELLS;
-}
-
-/** Drop zero-length legs and merge collinear legs only when they continue forward. */
-function simplify(points: RoutePoint[]): RoutePoint[] {
-  const result: RoutePoint[] = [];
-  for (const point of points) {
-    const last = result.at(-1);
-    if (last && last.x === point.x && last.y === point.y) continue;
-    const previous = result.at(-2);
-    if (last && previous) {
-      const dx1 = last.x - previous.x, dy1 = last.y - previous.y;
-      const dx2 = point.x - last.x, dy2 = point.y - last.y;
-      if ((dx1 === 0 && dx2 === 0 && dy1 * dy2 > 0)
-        || (dy1 === 0 && dy2 === 0 && dx1 * dx2 > 0)) result.pop();
-    }
-    result.push({ ...point });
-  }
-  return result;
 }
 
 function parallelRoute(geometry: ConnectionGeometry, horizontal: boolean): RoutePoint[] {
@@ -39,8 +17,8 @@ function parallelRoute(geometry: ConnectionGeometry, horizontal: boolean): Route
   const cross = horizontal ? 'y' : 'x';
   const a = from.position[axis], b = to.position[axis];
   const u = from.position[cross], v = to.position[cross];
-  const fromSign = DIRECTION_VECTORS[from.direction][axis];
-  const toSign = DIRECTION_VECTORS[to.direction][axis];
+  const fromSign = directionVector(from.direction)[axis];
+  const toSign = directionVector(to.direction)[axis];
   const point = (main: number, side: number): RoutePoint => horizontal
     ? { x: main, y: side } : { x: side, y: main };
 
@@ -82,11 +60,11 @@ function parallelRoute(geometry: ConnectionGeometry, horizontal: boolean): Route
 /** Direction-aware L/Z/detour routing, without obstacles or path search. */
 export function orthogonalRouter(geometry: ConnectionGeometry): ConnectionRoute {
   const { from, to } = geometry;
-  const fromVector = DIRECTION_VECTORS[from.direction];
-  const toVector = DIRECTION_VECTORS[to.direction];
+  const fromVector = directionVector(from.direction);
+  const toVector = directionVector(to.direction);
   const horizontal = fromVector.x !== 0;
   if (horizontal === (toVector.x !== 0)) {
-    return { points: simplify(parallelRoute(geometry, horizontal)) };
+    return { points: simplifyRoutePoints(parallelRoute(geometry, horizontal)) };
   }
 
   const elbow = horizontal
@@ -95,7 +73,7 @@ export function orthogonalRouter(geometry: ConnectionGeometry): ConnectionRoute 
   const fromLeg = (elbow.x - from.position.x) * fromVector.x + (elbow.y - from.position.y) * fromVector.y;
   const toLeg = (elbow.x - to.position.x) * toVector.x + (elbow.y - to.position.y) * toVector.y;
   if (fromLeg > 0 && toLeg > 0) {
-    return { points: simplify([from.position, elbow, to.position]) };
+    return { points: simplifyRoutePoints([from.position, elbow, to.position]) };
   }
 
   // The single elbow would enter a connector from the wrong side. Route on
@@ -105,5 +83,5 @@ export function orthogonalRouter(geometry: ConnectionGeometry): ConnectionRoute 
   const bends = horizontal
     ? [{ x, y: from.position.y }, { x, y }, { x: to.position.x, y }]
     : [{ x: from.position.x, y }, { x, y }, { x, y: to.position.y }];
-  return { points: simplify([from.position, ...bends, to.position]) };
+  return { points: simplifyRoutePoints([from.position, ...bends, to.position]) };
 }
