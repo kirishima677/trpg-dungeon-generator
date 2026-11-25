@@ -2,11 +2,13 @@ import { create } from 'zustand';
 import { v4 as uuid } from 'uuid';
 import { normalizeDungeonDocument } from '../model';
 import type { DungeonDocumentInput } from '../model/normalizeDungeon';
-import type { Connection, ConnectionType, ConnectorEndpoint, DungeonDocument, PlacedRoom, Piece, Rotation } from '../model/types';
+import type { Connection, ConnectionType, ConnectorEndpoint, DungeonDocument, PlacedRoom, PlacedRoomInput, Piece, Rotation, RoomInformation } from '../model/types';
 import { canConnect, endpointExists, usesEndpoint } from '../model/connections';
 import { getWorldCells } from '../utils/geometry';
 import { SCHEMA_VERSION } from '../utils/exportImport';
 import { pieceReferencesFrozen } from '../editor/pieces/pieceReferences';
+import { nextRoomNumber, normalizeRoomInformation, roomInformationError } from '../model/roomInformation';
+import type { RoomLabelVisibility } from '../editor/rooms/roomLabel';
 
 const MAX_HISTORY = 50;
 
@@ -34,6 +36,7 @@ export interface DungeonStore {
   /** Piece being placed (pending) */
   pendingPiece: Piece | null;
   view: ViewState;
+  roomLabels: RoomLabelVisibility;
 
   // ── Undo / Redo stacks (hold dungeon snapshots) ───────────────────────────
   undoStack: DungeonDocument[];
@@ -44,7 +47,8 @@ export interface DungeonStore {
   newDungeon: () => void;
 
   // ── Room actions ──────────────────────────────────────────────────────────
-  addRoom: (room: PlacedRoom) => void;
+  addRoom: (room: PlacedRoomInput) => void;
+  updateRoomInformation: (id: string, information: RoomInformation) => string | null;
   moveRoom: (id: string, position: { x: number; y: number }) => void;
   rotateRoom: (id: string) => void;
   deleteRoom: (id: string) => void;
@@ -64,6 +68,7 @@ export interface DungeonStore {
   // ── View ──────────────────────────────────────────────────────────────────
   setView: (view: Partial<ViewState>) => void;
   resetView: () => void;
+  setRoomLabels: (labels: Partial<RoomLabelVisibility>) => void;
 
   // ── History ───────────────────────────────────────────────────────────────
   undo: () => void;
@@ -104,7 +109,7 @@ function touch(dungeon: DungeonDocument): DungeonDocument {
  * the room with `excludeId`).
  */
 function hasCollision(
-  incoming: PlacedRoom,
+  incoming: PlacedRoomInput,
   rooms: PlacedRoom[],
   excludeId?: string
 ): boolean {
@@ -130,6 +135,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
   editorMode: 'select',
   pendingPiece: null,
   view: DEFAULT_VIEW,
+  roomLabels: { numbers: true, names: true },
   undoStack: [],
   redoStack: [],
 
@@ -167,14 +173,29 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
   addRoom(room) {
     if (pieceReferencesFrozen()) return;
     const { dungeon, undoStack } = get();
-    if (hasCollision(room, dungeon.rooms)) return; // silent collision guard
+    if (dungeon.rooms.some(existing => existing.id === room.id) || hasCollision(room, dungeon.rooms)) return;
 
-    const next = touch({ ...dungeon, rooms: [...dungeon.rooms, room] });
+    const placed: PlacedRoom = { ...room, information: normalizeRoomInformation(room.information,
+      nextRoomNumber(dungeon.rooms.map(r => r.information.number))) };
+    const next = touch({ ...dungeon, rooms: [...dungeon.rooms, placed] });
     set({
       dungeon: next,
       undoStack: [...undoStack.slice(-MAX_HISTORY + 1), snapshot(dungeon)],
       redoStack: [],
     });
+  },
+
+  updateRoomInformation(id, value) {
+    const { dungeon, undoStack } = get();
+    const room = dungeon.rooms.find(r => r.id === id);
+    if (!room) return '部屋が見つかりません。';
+    const error = roomInformationError(value, dungeon.rooms.filter(r => r.id !== id).map(r => r.information.number));
+    if (error) return error;
+    const information = normalizeRoomInformation(value, value.number.trim());
+    if (JSON.stringify(information) === JSON.stringify(room.information)) return null;
+    set({ dungeon: touch({ ...dungeon, rooms: dungeon.rooms.map(r => r.id === id ? { ...r, information } : r) }),
+      undoStack: [...undoStack.slice(-MAX_HISTORY + 1), snapshot(dungeon)], redoStack: [] });
+    return null;
   },
 
   moveRoom(id, position) {
@@ -312,6 +333,10 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
     set({ view: DEFAULT_VIEW });
   },
 
+  setRoomLabels(labels) {
+    set(state => ({ roomLabels: { ...state.roomLabels, ...labels } }));
+  },
+
   // ── Undo / Redo ───────────────────────────────────────────────────────────
   undo() {
     if (pieceReferencesFrozen()) return;
@@ -319,7 +344,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
     if (undoStack.length === 0) return;
     const prev = undoStack[undoStack.length - 1];
     set({
-      dungeon: prev,
+      dungeon: { ...prev, markdown: dungeon.markdown },
       selectedRoomId: null,
       selectedConnectionId: null,
       pendingConnector: null,
@@ -334,7 +359,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
     if (redoStack.length === 0) return;
     const next = redoStack[0];
     set({
-      dungeon: next,
+      dungeon: { ...next, markdown: dungeon.markdown },
       selectedRoomId: null,
       selectedConnectionId: null,
       pendingConnector: null,

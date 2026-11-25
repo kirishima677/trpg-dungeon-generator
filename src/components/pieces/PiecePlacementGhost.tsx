@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
-import type { PlacedRoom, Rotation } from '../../model/types';
+import type { PlacedRoomInput, Rotation } from '../../model/types';
 import { getWorldCells } from '../../utils/geometry';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
@@ -70,7 +70,7 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
 
   if (!pendingPiece) return null;
 
-  const ghostRoom: PlacedRoom = {
+  const ghostRoom: PlacedRoomInput = {
     id: '__ghost__',
     pieceId: pendingPiece.id,
     piece: pendingPiece,
@@ -87,7 +87,7 @@ export function PiecePlacementGhost({ svgRef }: PiecePlacementGhostProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (hasCollision) return;
-    const newRoom: PlacedRoom = {
+    const newRoom: PlacedRoomInput = {
       id: uuid(),
       pieceId: pendingPiece.id,
       piece: pendingPiece,

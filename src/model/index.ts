@@ -10,6 +10,8 @@ export type {
   Piece,
   PieceShape,
   PlacedRoom,
+  PlacedRoomInput,
+  RoomInformation,
   Rotation,
   DungeonDocument,
   DungeonMeta,

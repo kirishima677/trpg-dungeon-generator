@@ -9,7 +9,7 @@ import { routeConnection } from '../src/editor/connectors/routing/connectionRout
 import type { ConnectionRoute, RoutePoint } from '../src/editor/connectors/routing/connectionRouter';
 import { orthogonalRouter } from '../src/editor/connectors/routing/orthogonalRouter';
 import { useDungeonStore } from '../src/store/dungeonStore';
-import { buildExportEnvelope, parseImport } from '../src/utils/exportImport';
+import { buildExportEnvelope, parseImport, SCHEMA_VERSION } from '../src/utils/exportImport';
 import { dungeonRepository } from '../src/repository/dungeonRepository';
 import { db } from '../src/db/db';
 
@@ -187,7 +187,7 @@ test('route data stays out of documents, JSON and undo/redo snapshots', () => {
   assert.deepEqual(state().redoStack, redo);
   const exported = buildExportEnvelope(state().dungeon);
   const json = JSON.stringify(exported);
-  assert.equal(exported.schemaVersion, '1.1.0');
+  assert.equal(exported.schemaVersion, SCHEMA_VERSION);
   assert.ok(!/"(?:route|points|segments|path|waypoints)"\s*:/.test(json));
   assert.ok(!/"(?:route|points|segments|path|waypoints)"\s*:/.test(JSON.stringify([undo, redo])));
   const imported = parseImport(JSON.parse(json)).dungeon;

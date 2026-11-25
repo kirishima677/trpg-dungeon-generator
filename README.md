@@ -74,7 +74,7 @@ Routing層とRendererは分離しています。経路は保存データに追�
 - 接続口が塞がれている場合や探索上限に達した場合は、接続を保持して赤い警告経路を表示する
 - 赤い経路は通行可能な経路ではなく接続関係の表示。線の説明で失敗理由を確認でき、配置を変えると自動復旧する
 
-占有グリッド・経路・探索状態は保存しません。保存形式 `1.1.0` と既存データの互換性を維持します。
+占有グリッド・経路・探索状態は保存しません。現在の保存形式 `1.2.0` でも既存データの互換性を維持します。
 探索範囲とノード数には上限があります。具体値と検証内容は [障害物回避実装メモ](docs/obstacle-routing.md) を参照してください。
 
 ![Obstacle Routing](docs/images/obstacle-routing.jpg)
@@ -134,6 +134,23 @@ Routing層とRendererは分離しています。経路は保存データに追�
 
 ![Custom Piece and Corridors](docs/images/piece-editor-dungeon.jpg)
 
+### 部屋番号・部屋情報
+
+- 新規配置した部屋や手動通路ピースに、数値番号の最大値＋1で番号を付与する（01、02…）
+- 右パネルで番号・部屋名称・公開説明・GM専用情報・部屋タグを入力し、「部屋情報を適用」でまとめて確定する
+- 番号は `A-01` / `B1-05` などの文字列も利用でき、空・重複はエラーとして既存値を維持する
+- 部屋ごとの名称・説明・タグはPiece定義と独立し、名称未設定時はPiece名を表示する
+- 番号と名称を実際の床セル内に描画し、ツールバーで個別に表示を切り替える
+- 左側の「部屋一覧」から選択できる。部屋削除で他の部屋を再採番しない
+- 情報の適用は1回のUndo / Redoで復元でき、情報だけの変更では通路を再計算しない
+- 公開説明・GM専用情報はMarkdown文字列として保存し、ダンジョン全体のMarkdownとは別に管理する
+
+旧データは既存の番号を優先し、未設定の番号と空の部屋情報を安定した順序で補完します。
+JSONはGM専用情報も含む完全なプロジェクトデータです。プレイヤー向け公開データの生成は今回の対象外です。
+採番・移行・保存・検証の詳細は [部屋情報管理実装メモ](docs/room-information.md) を参照してください。
+
+![Room Information](docs/images/room-information.jpg)
+
 ### 保存
 Dexie + IndexedDB を使用してブラウザローカルに保存します。
 メニューバーの「保存」で保存し、「読込」で保存済みダンジョンを開きます。
@@ -143,7 +160,7 @@ Dexie + IndexedDB を使用してブラウザローカルに保存します。
 ### Export / Import
 JSON形式でエクスポート・インポートが可能です。
 フォーマット識別子 `trpg-dungeon-generator` とスキーマバージョンを含みます。
-現在のスキーマは `1.1.0` で、接続情報も含みます。従来の `1.0.0` を読み込み可能です。
+現在のスキーマは `1.2.0` で、接続情報・部屋情報も含みます。従来の `1.0.0` / `1.1.0` を読み込み可能です。
 接続情報のない旧データは空の接続一覧として読み込みます。
 旧 `PlacedRoom.connections` に接続がある場合はドキュメント単位の接続へ移行し、
 部屋単位のマップは除去します。詳細は [コネクター実装メモ](docs/connector-system.md) を参照してください。
@@ -224,7 +241,7 @@ interface Connector {
 interface Piece {
   id: string;
   name: string;
-  shape: 'rectangle' | 'l-shape' | 'corridor';
+  shape: 'rectangle' | 'l-shape' | 'corridor' | 'custom';
   cells: { x: number; y: number }[];
   connectors: Connector[];
   tags?: string[];
@@ -237,6 +254,15 @@ interface PlacedRoom {
   piece: Piece;
   position: { x: number; y: number };
   rotation: 0 | 90 | 180 | 270;
+  information: RoomInformation;
+}
+
+interface RoomInformation {
+  number: string;
+  name: string;
+  description: string;
+  gmNotes: string;
+  tags: string[];
 }
 
 // 配置済み部屋同士の論理的な接続（座標は保存しない）

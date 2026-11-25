@@ -56,6 +56,8 @@ export function Toolbar({ onOpenMarkdown, onOpenPieceEditor }: ToolbarProps) {
     selectedRoomId,
     rotateRoom,
     deleteRoom,
+    roomLabels,
+    setRoomLabels,
   } = useDungeonStore(useShallow(s => ({
     editorMode: s.editorMode,
     setEditorMode: s.setEditorMode,
@@ -71,6 +73,8 @@ export function Toolbar({ onOpenMarkdown, onOpenPieceEditor }: ToolbarProps) {
     selectedRoomId: s.selectedRoomId,
     rotateRoom: s.rotateRoom,
     deleteRoom: s.deleteRoom,
+    roomLabels: s.roomLabels,
+    setRoomLabels: s.setRoomLabels,
   })));
 
   return (
@@ -169,6 +173,10 @@ export function Toolbar({ onOpenMarkdown, onOpenPieceEditor }: ToolbarProps) {
         padding: '8px 12px', background: '#f8fafc', color: '#0f172a', cursor: 'pointer', fontWeight: 600 }}>
         ピースエディタ
       </button>
+      <label style={{ fontSize: 12, marginLeft: 8 }}><input type="checkbox" checked={roomLabels.numbers}
+        onChange={e => setRoomLabels({ numbers: e.target.checked })} /> 部屋番号</label>
+      <label style={{ fontSize: 12 }}><input type="checkbox" checked={roomLabels.names}
+        onChange={e => setRoomLabels({ names: e.target.checked })} /> 部屋名称</label>
     </div>
   );
 }

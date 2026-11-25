@@ -4,8 +4,10 @@ import type { DungeonDocumentInput } from '../model/normalizeDungeon';
 import { normalizeConnections } from '../model/connections';
 import { isStandardPiece, normalizePiece, pieceStructure } from '../editor/pieces/pieceDefinition';
 import { DEFAULT_PIECES } from '../model/pieceLibrary';
+import { SCHEMA_VERSION, SUPPORTED_DUNGEON_SCHEMAS } from '../model/dungeonSchema';
+import { roomInformationError } from '../model/roomInformation';
 
-export const SCHEMA_VERSION = '1.1.0';
+export { SCHEMA_VERSION };
 export const FORMAT_ID = 'trpg-dungeon-generator' as const;
 
 export function buildExportEnvelope(dungeon: DungeonDocument): ExportEnvelope {
@@ -38,7 +40,7 @@ export function parseImport(raw: unknown): ExportEnvelope {
     throw new Error('Invalid dungeon file: formatId mismatch');
   }
   const envelope = raw as Record<string, unknown>;
-  if (envelope.schemaVersion !== '1.0.0' && envelope.schemaVersion !== SCHEMA_VERSION) {
+  if (typeof envelope.schemaVersion !== 'string' || !SUPPORTED_DUNGEON_SCHEMAS.includes(envelope.schemaVersion)) {
     throw new Error('Unsupported dungeon schema version');
   }
   const dungeon = envelope.dungeon as DungeonDocumentInput;
@@ -49,6 +51,7 @@ export function parseImport(raw: unknown): ExportEnvelope {
   }
   const roomIds = new Set<string>();
   const pieceDefinitions = new Map<string, string>();
+  const roomNumbers = new Set<string>();
   for (const room of dungeon.rooms) {
     if (!room || typeof room.id !== 'string' || roomIds.has(room.id)
       || !room.position || !Number.isFinite(room.position.x) || !Number.isFinite(room.position.y)
@@ -56,6 +59,11 @@ export function parseImport(raw: unknown): ExportEnvelope {
       || !room.piece || !Array.isArray(room.piece.cells) || room.piece.cells.length === 0
       || !Array.isArray(room.piece.connectors)) throw new Error('Invalid room');
     roomIds.add(room.id);
+    if (envelope.schemaVersion === SCHEMA_VERSION) {
+      const error = roomInformationError(room.information, roomNumbers);
+      if (error) throw new Error(`Invalid room information: ${error}`);
+      roomNumbers.add(room.information!.number.trim());
+    }
     const connectorIds = new Set<string>();
     for (const cell of room.piece.cells) {
       if (!cell || !Number.isFinite(cell.x) || !Number.isFinite(cell.y)) throw new Error('Invalid room cell');

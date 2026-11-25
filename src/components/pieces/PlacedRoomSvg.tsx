@@ -7,6 +7,7 @@ import { connectorPoint } from '../../editor/connectors/connectionGeometry';
 import { GRID_LINE_COLOR, GRID_LINE_WIDTH, GRID_SIZE } from '../../editor/grid';
 import { DIRECTION_BITS } from '../../editor/connectors/corridor/directions';
 import { corridorWalls } from '../../editor/connectors/corridor/corridorShape';
+import { RoomLabel } from './RoomLabel';
 
 interface PlacedRoomSvgProps {
   room: PlacedRoom;
@@ -21,7 +22,7 @@ export function PlacedRoomSvg({ room, isSelected, openConnectorIds }: PlacedRoom
     deleteRoom: s.deleteRoom,
     editorMode: s.editorMode,
   })));
-  const { view } = useDungeonStore(useShallow(s => ({ view: s.view })));
+  const { view, roomLabels } = useDungeonStore(useShallow(s => ({ view: s.view, roomLabels: s.roomLabels })));
 
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, rx: 0, ry: 0 });
@@ -117,28 +118,7 @@ export function PlacedRoomSvg({ room, isSelected, openConnectorIds }: PlacedRoom
         );
       })}
 
-      {/* Room label */}
-      {(() => {
-        const minX = Math.min(...cells.map(c => c.x));
-        const minY = Math.min(...cells.map(c => c.y));
-        const maxX = Math.max(...cells.map(c => c.x));
-        const maxY = Math.max(...cells.map(c => c.y));
-        const cx = ((minX + maxX + 1) / 2) * GRID_SIZE;
-        const cy = ((minY + maxY + 1) / 2) * GRID_SIZE;
-        return (
-          <text
-            x={cx}
-            y={cy}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={GRID_SIZE * 0.28}
-            fill={strokeColor}
-            style={{ userSelect: 'none', pointerEvents: 'none' }}
-          >
-            {room.piece.name}
-          </text>
-        );
-      })()}
+      <RoomLabel room={room} cells={cells} visibility={roomLabels} color={strokeColor} />
 
       {/* Connectors */}
       {editorMode !== 'connect' && connectors.map(con => {

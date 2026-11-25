@@ -1,7 +1,7 @@
 import type {
   ConnectorDirection,
   Connector,
-  PlacedRoom,
+  PlacedRoomInput as PlacedRoom,
   Rotation,
   Piece,
 } from '../model/types';

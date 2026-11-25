@@ -39,6 +39,15 @@ export interface Piece {
 
 export type Rotation = 0 | 90 | 180 | 270;
 
+/** Scenario data belongs to one placed room, never to its Piece template. */
+export interface RoomInformation {
+  number: string;
+  name: string;
+  description: string;
+  gmNotes: string;
+  tags: string[];
+}
+
 /**
  * A piece placed on the dungeon canvas.
  */
@@ -51,7 +60,11 @@ export interface PlacedRoom {
   /** Canvas position in grid coordinates (top-left cell of the bounding box) */
   position: { x: number; y: number };
   rotation: Rotation;
+  information: RoomInformation;
 }
+
+/** Compatibility boundary for old documents and newly placed pieces. */
+export type PlacedRoomInput = Omit<PlacedRoom, 'information'> & { information?: RoomInformation };
 
 // Logical references only; display coordinates are derived from the rooms.
 export type ConnectionType = 'corridor' | 'door' | 'stairs' | 'secret';

@@ -17,6 +17,7 @@ import { routeConnections } from '../src/editor/connectors/routing/connectionRou
 import { prepareConnectionScene } from '../src/editor/connectors/corridor/connectionScene';
 import { collectPieceReferences, pieceReferencesFrozen, registerPieceReferenceReader, withPieceLibraryRead, withPieceReferenceCheck } from '../src/editor/pieces/pieceReferences';
 import { PIECE_CHANNEL, PIECE_LIBRARY_UPDATED } from '../src/editor/pieces/pieceEvents';
+import { emptyRoomInformation } from '../src/model/roomInformation';
 
 const custom = (): Piece => ({ id: 'chapel', name: '礼拝堂', shape: 'custom',
   cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: 2 }, { x: 1, y: 2 }, { x: 2, y: 2 }],
@@ -29,7 +30,7 @@ const state = () => useDungeonStore.getState();
 let live = new Set<string>();
 const repository = createPieceRepository(db, async work => work(live));
 const room = (id: string, piece: Piece, x = 0, y = 0, rotation: Rotation = 0): PlacedRoom =>
-  ({ id, pieceId: piece.id, piece: structuredClone(piece), position: { x, y }, rotation });
+  ({ id, pieceId: piece.id, piece: structuredClone(piece), position: { x, y }, rotation, information: emptyRoomInformation(id) });
 
 beforeEach(async () => { live = new Set(); state().newDungeon(); await db.pieceLibrary.clear(); await db.dungeons.clear(); });
 after(async () => { await db.delete(); });

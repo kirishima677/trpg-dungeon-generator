@@ -1,7 +1,9 @@
-import type { Connection, DungeonDocument, PlacedRoom } from './types';
+import type { Connection, DungeonDocument, PlacedRoomInput } from './types';
 import { normalizeConnections } from './connections';
+import { normalizeRoomInformationList } from './roomInformation';
+import { SCHEMA_VERSION } from './dungeonSchema';
 
-type LegacyRoom = PlacedRoom & {
+type LegacyRoom = PlacedRoomInput & {
   connections?: Record<string, { roomId: string; connectorId: string }>;
 };
 
@@ -31,12 +33,13 @@ export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): Dungeon
       }
     }
   }
-  const rooms = dungeon.rooms.map(room => {
+  const rooms = normalizeRoomInformationList(dungeon.rooms.map(room => {
     const { connections: _legacy, ...placedRoom } = room;
     return placedRoom;
-  });
+  }));
   return {
     ...dungeon,
+    version: SCHEMA_VERSION,
     rooms,
     connections: normalizeConnections(rooms, dungeon.connections ?? legacyConnections),
     markdown: dungeon.markdown ?? '',
