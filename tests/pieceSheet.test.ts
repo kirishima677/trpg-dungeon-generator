@@ -1,3 +1,4 @@
+import { issueMessages } from '../src/publishing/publicationIssues';
 import 'fake-indexeddb/auto';
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
@@ -68,10 +69,10 @@ test('conflicting snapshots under one Piece ID fail', () => {
   assert.throws(() => buildDungeonInventory(source, 'player'), /異なる形状/);
 });
 test('empty dungeon and direct connections produce no generated tiles', () => {
-  assert.deepEqual(buildDungeonInventory(dungeon([], []), 'player'), { items: [], warnings: [] });
+  assert.deepEqual(buildDungeonInventory(dungeon([], []), 'player'), { items: [], issues: [] });
   const inv = buildDungeonInventory(dungeon([room('a'), room('b', 4)]), 'player');
   assert.equal(inv.items.filter(i => i.source === 'generated-corridor').length, 0);
-  assert.deepEqual(inv.warnings, []);
+  assert.deepEqual(inv.issues, []);
 });
 test('actual crossing and overlapping routes count the network rather than individual routes', () => {
   const source = dungeon([room('left', 0, 6), room('right', 14, 6), room('top', 7, 0), room('bottom', 7, 14)],
@@ -86,12 +87,12 @@ test('secret connections are removed before routing/counting; special and failed
   const source = dungeon([room('a'), room('b', 12), room('c', 0, 12)],
     [link('normal', 'a', 'b'), link('PRIVATE_SECRET_ID', 'a', 'c', 'south', 'north', 'secret')]);
   const player = buildDungeonInventory(source, 'player'), gm = buildDungeonInventory(source, 'gm');
-  assert.deepEqual(player.warnings, []); assert.match(gm.warnings.join(' '), /特殊接続が1件/);
-  for (const type of ['door', 'stairs'] as const) assert.match(buildDungeonInventory(dungeon(undefined, [link(type, 'a', 'b', 'east', 'west', type)]), 'player').warnings.join(' '), /特殊接続/);
+  assert.deepEqual(player.issues, []); assert.match(gm.issues.map(i => i.message).join(' '), /特殊接続が1件/);
+  for (const type of ['door', 'stairs'] as const) assert.match(buildDungeonInventory(dungeon(undefined, [link(type, 'a', 'b', 'east', 'west', type)]), 'player').issues.map(i => i.message).join(' '), /特殊接続/);
   const blocked = dungeon([room('a'), room('b', 12), room('block', 4, 0)]);
-  const failed = buildDungeonInventory(blocked, 'player'); assert.match(failed.warnings.join(' '), /未解決/);
+  const failed = buildDungeonInventory(blocked, 'player'); assert.match(failed.issues.map(i => i.message).join(' '), /未解決/);
   assert.equal(failed.items.filter(i => i.source === 'generated-corridor').length, 0);
-  assert.match(buildDungeonInventory(source, 'player', false).warnings.join(' '), /自動生成通路を除外/);
+  assert.match(buildDungeonInventory(source, 'player', false).issues.map(i => i.message).join(' '), /自動生成通路を除外/);
 });
 test('player secret ports disappear unless used by an included connection; no secret marks survive', () => {
   const source = dungeon(); source.rooms[0].piece.connectors.find(c => c.direction === 'east')!.kind = 'secret';
@@ -164,7 +165,7 @@ test('page limit is accounted for and blocks export without dropping requested i
   const layout = buildPieceSheetLayout(items, p, options());
   assert.equal(layout.pages.length, 100); assert.equal(layout.unplacedPieces.length, 1);
   assert.equal(layout.unplacedPieces[0].reason, 'page-limit');
-  assert.match(validatePieceSheetLayout(layout, items, p, options()).join(' '), /未配置/);
+  assert.match(issueMessages(validatePieceSheetLayout(layout, items, p, options())).join(' '), /未配置/);
 });
 test('independent validator catches overlap, bounds, wrong scale/rotation, missing and duplicate instances', () => {
   const items = buildCorridorInventory().items, p = profile(), o = options(), layout = buildPieceSheetLayout(items, p, o);
@@ -178,7 +179,7 @@ test('independent validator catches overlap, bounds, wrong scale/rotation, missi
   ]) { const tampered = structuredClone(layout); mutate(tampered); assert.ok(validatePieceSheetLayout(tampered, items, p, o).length); }
   const overlap = structuredClone(layout), [first, second] = overlap.pages[0].pieces;
   second.x = first.x; second.y = first.y; second.art.x = first.art.x; second.art.y = first.art.y;
-  assert.ok(validatePieceSheetLayout(overlap, items, p, o).includes('素材同士が重なっています。'));
+  assert.ok(validatePieceSheetLayout(overlap, items, p, o).some(i => i.code === 'layout-overlap'));
 });
 test('zero quantities remove instances, a thousand tiles remain complete, invalid geometry fails early', () => {
   const base = buildCorridorInventory().items, p = profile(), o = options();

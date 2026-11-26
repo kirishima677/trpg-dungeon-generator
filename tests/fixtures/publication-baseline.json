@@ -1,0 +1,18 @@
+{
+  "gm/maps/map.svg": "778d9a1939c44bae6c6200da138ef6f3f7df00755ebeaeda9a3abb4e03073c9e",
+  "player/maps/map.svg": "2741001b205aedf2c9cabdf088d188f33a6de6964f240b94daa84fb5b14dad5e",
+  "gm/guide/scenario-guide.html": "982efceb6685923dc557a4f848b4e8f9165e8e1ce29796c04a847490d441d812",
+  "player/guide/scenario-guide.html": "b79e08f316613b4ca9740be77103991aae75c4b42c4eb0b8e84e1a9798da0f64",
+  "gm/print/scenario-guide.html": "0843c608e05cb0a806f3faabdc9c01862060fcb917515a8786cb555c30c8c0b6",
+  "player/print/scenario-guide.html": "25c704db871cddda9709d7f3101de08f578a6487bd3b91b88fce6e6271b929b1",
+  "gm/print/reference-map.html": "0561790531e35d753b69e2f4b4e183c8110a479b6466ca663cab287e2786da9b",
+  "player/print/reference-map.html": "6fc0cb9c798cc397b773fc2857c3488b081815766020876a9781235b51b62738",
+  "gm/print/battle-map.html": "443f7896fadf16a011f8dd9d4c38e68eac91e4508c201c2af551c9d7e4d13baf",
+  "player/print/battle-map.html": "6f90bac39f5e46d3780af374dde3f6944d51ac0ca44727aaa86c4d068af7e6b8",
+  "gm/print/piece-sheets.html": "243d274e41b6d5be15185b83e72e7eb3f20bfdc28b66bf197dc766fc9c254648",
+  "player/print/piece-sheets.html": "fe1971e54717471eb333a7b1fd791f1948679966a182ea7d3fc7911fbd561948",
+  "gm/print/piece-inventory.csv": "db7e9fd5048ef89fe3ccc6b49091b17a75388b9d40aff1c94c4b58a212777759",
+  "player/print/piece-inventory.csv": "69d75fceec0ab8ef9ab3588510e0821bcd090e83406a3feee8326e0928ddc384",
+  "project/dungeon.json": "be0cceae6cb5f4856b7de37e84bbcd659ca01748031618739a1d48963db027fb",
+  "project/pieces/custom-piece-0001.json": "b5982a9698866b719425dcfd18ce083c71b932467e03398a5a8209ef25e05f7e"
+}

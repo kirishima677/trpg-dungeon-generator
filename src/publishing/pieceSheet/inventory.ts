@@ -1,3 +1,5 @@
+import { publicationIssue } from '../publicationIssues';
+import type { PublicationIssue } from '../publicationIssues';
 import type { DungeonDocument, Piece } from '../../model/types';
 import type { PublishAudience } from '../publishProfile';
 import type { PublishMapGeometry } from '../publishMapGeometry';
@@ -24,7 +26,7 @@ export interface PieceInventoryItem {
   name: string; code: string; category: PieceCategory; standard: boolean; piece: Piece;
   requiredQuantity: number; printQuantity: number;
 }
-export interface PieceInventory { items: PieceInventoryItem[]; warnings: string[] }
+export interface PieceInventory { items: PieceInventoryItem[]; issues: PublicationIssue[] }
 export const MAX_INVENTORY_ITEMS = 256;
 export const MAX_QUANTITY_PER_ITEM = 500;
 export const MAX_SHEET_PIECES = 1000;
@@ -86,13 +88,13 @@ function material(piece: Piece, index: number, audience: PublishAudience, generi
 export function buildLibraryInventory(pieces: readonly Piece[], audience: PublishAudience = 'gm'): PieceInventory {
   if (pieces.length > MAX_INVENTORY_ITEMS) throw new Error(`素材は${MAX_INVENTORY_ITEMS}種類までです。`);
   const ids = new Set<string>();
-  return { warnings: [], items: [...pieces].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0).map((p, i) => {
+  return { issues: [], items: [...pieces].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0).map((p, i) => {
     if (ids.has(p.id)) throw new Error('ライブラリのPiece IDが重複しています。');
     ids.add(p.id); return material(p, i, audience, audience === 'player');
   }) };
 }
 export function buildCorridorInventory(): PieceInventory {
-  return { warnings: [], items: CORRIDOR_TILES.map(t => ({ ...tileItem(t.mask, 0), printQuantity: 1 })) };
+  return { issues: [], items: CORRIDOR_TILES.map(t => ({ ...tileItem(t.mask, 0), printQuantity: 1 })) };
 }
 export function buildDungeonInventory(source: DungeonDocument, audience: PublishAudience, includeGenerated = true,
   resolve?: () => PublishMapGeometry): PieceInventory {
@@ -117,17 +119,17 @@ export function buildDungeonInventory(source: DungeonDocument, audience: Publish
   }
   const items = [...groups].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([, g], i) => ({
     ...material(g.piece, i, audience, true, publicPorts.get(g.piece.id)), requiredQuantity: g.quantity, printQuantity: g.quantity }));
-  const warnings: string[] = [];
+  const issues: PublicationIssue[] = [];
   const special = geometry.document.connections.filter(c => c.type !== 'corridor').length;
-  if (special) warnings.push(`専用素材に変換できない特殊接続が${special}件あります。`);
-  if (geometry.unresolvedCount) warnings.push(`未解決の接続が${geometry.unresolvedCount}件あります。正常な通路として集計していません。`);
+  if (special) issues.push(publicationIssue('unsupported-connections', `専用素材に変換できない特殊接続が${special}件あります。`, special));
+  if (geometry.unresolvedCount) issues.push(publicationIssue('unresolved-connections', `未解決の接続が${geometry.unresolvedCount}件あります。正常な通路として集計していません。`, geometry.unresolvedCount));
   const counts = corridorTileCounts(geometry.scene.network.cells);
   if (includeGenerated) {
     for (const t of CORRIDOR_TILES) if (counts.has(t.mask)) items.push(tileItem(t.mask, counts.get(t.mask)!));
-  } else if (counts.size) warnings.push('自動生成通路を除外しています。');
+  } else if (counts.size) issues.push(publicationIssue('excluded-corridors', '自動生成通路を除外しています。'));
   if (items.length > MAX_INVENTORY_ITEMS) throw new Error(`素材は${MAX_INVENTORY_ITEMS}種類までです。`);
-  if (warnings.length) warnings.push('この印刷シートだけではダンジョン全体を再構成できません。');
-  return { items, warnings };
+  if (issues.length) issues.push(publicationIssue('incomplete-reconstruction', 'この印刷シートだけではダンジョン全体を再構成できません。'));
+  return { items, issues };
 }
 export function withPrintQuantities(items: readonly PieceInventoryItem[], quantities: Readonly<Record<string, number>>) {
   if (items.length > MAX_INVENTORY_ITEMS) throw new Error(`素材は${MAX_INVENTORY_ITEMS}種類までです。`);

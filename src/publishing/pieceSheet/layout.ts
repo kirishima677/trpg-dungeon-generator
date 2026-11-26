@@ -1,3 +1,5 @@
+import { publicationIssue } from '../publicationIssues';
+import type { PublicationIssue, PublicationIssueCode } from '../publicationIssues';
 import type { PrintProfile } from '../print/printProfile';
 import { MAX_PRINT_PAGES } from '../print/printProfile';
 import { printAreas, PRINT_EPSILON as E } from '../print/printLayout';
@@ -88,45 +90,46 @@ export function buildPieceSheetLayout(input: readonly PieceInventoryItem[], prof
 }
 
 /** Independent verification of the returned rectangles and every requested instance. */
-export function validatePieceSheetLayout(layout: PieceSheetLayout, input: readonly PieceInventoryItem[], profile: PrintProfile, options: PieceSheetOptions): string[] {
+export function validatePieceSheetLayout(layout: PieceSheetLayout, input: readonly PieceInventoryItem[], profile: PrintProfile, options: PieceSheetOptions): PublicationIssue[] {
   validateSheetOptions(options);
   const items = withPrintQuantities(input, {}), area = printAreas(pieceSheetPrintProfile(profile)), b = area.contentAreaMm;
-  const errors = new Set<string>(), byId = new Map(items.map(i => [i.id, i]));
+  const errors = new Map<PublicationIssueCode, PublicationIssue>(), byId = new Map(items.map(i => [i.id, i]));
+  const add = (code: PublicationIssueCode, message: string) => errors.set(code, publicationIssue(code, message));
   const expected = new Map<string, string>(items.flatMap(i => Array.from({ length: i.printQuantity }, (_, n) => [`${i.id}:${n}`, i.id] as const)));
   const seen = new Set<string>();
   const same = (a: number, z: number) => Number.isFinite(a) && Number.isFinite(z) && Math.abs(a - z) <= E;
   const sameRect = (a: PrintRect, z: PrintRect) => same(a.x, z.x) && same(a.y, z.y) && same(a.width, z.width) && same(a.height, z.height);
   if (!same(layout.cellSizeMm, profile.map.cellSizeMm) || !sameRect(layout.contentAreaMm, b)
-    || !same(layout.printableWidthMm, area.printableWidthMm) || !same(layout.printableHeightMm, area.printableHeightMm)) errors.add('用紙・縮尺が設定と一致しません。');
-  if (layout.totalPieces !== expected.size || layout.pages.length > MAX_PRINT_PAGES) errors.add('総数・ページ数が不正です。');
+    || !same(layout.printableWidthMm, area.printableWidthMm) || !same(layout.printableHeightMm, area.printableHeightMm)) add('layout-profile', '用紙・縮尺が設定と一致しません。');
+  if (layout.totalPieces !== expected.size || layout.pages.length > MAX_PRINT_PAGES) add('layout-total', '総数・ページ数が不正です。');
   const account = (id: string, materialId: string) => {
-    if (seen.has(id) || expected.get(id) !== materialId) errors.add('素材の重複または未指定の素材があります。'); seen.add(id);
+    if (seen.has(id) || expected.get(id) !== materialId) add('layout-instances', '素材の重複または未指定の素材があります。'); seen.add(id);
   };
   layout.pages.forEach((page, index) => {
-    if (page.index !== index || !page.pieces.length) errors.add('ページの識別が不正です。');
+    if (page.index !== index || !page.pieces.length) add('layout-page', 'ページの識別が不正です。');
     page.pieces.forEach((p, n) => {
       account(p.instanceId, p.inventoryItemId);
       const item = byId.get(p.inventoryItemId);
       if (!item) return;
-      if (p.rotation !== 0 && (p.rotation !== 90 || !options.allowRotation)) errors.add('回転設定が不正です。');
+      if (p.rotation !== 0 && (p.rotation !== 90 || !options.allowRotation)) add('layout-rotation', '回転設定が不正です。');
       // Re-derive size from occupied cells rather than trusting the packer's footprint.
       const xs = item.piece.cells.map(c => c.x), ys = item.piece.cells.map(c => c.y);
       const w = Math.max(...xs) - Math.min(...xs) + 1, h = Math.max(...ys) - Math.min(...ys) + 1;
       const artW = (p.rotation === 90 ? h : w) * profile.map.cellSizeMm, artH = (p.rotation === 90 ? w : h) * profile.map.cellSizeMm;
       const inset = options.pieceGapMm / 2 + profile.map.cellSizeMm / 40 * 1.5;
       if (!same(p.width, artW + inset * 2) || !same(p.height, artH + inset * 2 + (options.showPieceLabels ? 8 : 0))
-        || !sameRect(p.art, { x: p.x + inset, y: p.y + inset, width: artW, height: artH })) errors.add('素材の寸法・余白・ラベル領域が不正です。');
+        || !sameRect(p.art, { x: p.x + inset, y: p.y + inset, width: artW, height: artH })) add('layout-dimensions', '素材の寸法・余白・ラベル領域が不正です。');
       if (![p.x, p.y, p.width, p.height].every(Number.isFinite) || p.x < b.x - E || p.y < b.y - E
-        || p.x + p.width > b.x + b.width + E || p.y + p.height > b.y + b.height + E) errors.add('素材が印刷可能領域を超えています。');
-      if (page.group !== groupFor(item, options.separateRoomsAndCorridors)) errors.add('素材の分類が不正です。');
+        || p.x + p.width > b.x + b.width + E || p.y + p.height > b.y + b.height + E) add('layout-bounds', '素材が印刷可能領域を超えています。');
+      if (page.group !== groupFor(item, options.separateRoomsAndCorridors)) add('layout-category', '素材の分類が不正です。');
       for (const other of page.pieces.slice(n + 1)) {
         if (p.x < other.x + other.width - E && p.x + p.width > other.x + E
-          && p.y < other.y + other.height - E && p.y + p.height > other.y + E) errors.add('素材同士が重なっています。');
+          && p.y < other.y + other.height - E && p.y + p.height > other.y + E) add('layout-overlap', '素材同士が重なっています。');
       }
     });
   });
   for (const p of layout.unplacedPieces) account(p.instanceId, p.inventoryItemId);
-  if (seen.size !== expected.size || [...expected.keys()].some(id => !seen.has(id))) errors.add('必要な印刷素材が不足しています。');
-  if (layout.unplacedPieces.length) errors.add(`未配置の素材が${layout.unplacedPieces.length}枚あります。用紙・方向・余白・寸法または印刷数を調整してください。`);
-  return [...errors];
+  if (seen.size !== expected.size || [...expected.keys()].some(id => !seen.has(id))) add('layout-missing', '必要な印刷素材が不足しています。');
+  if (layout.unplacedPieces.length) add('unplaced-pieces', `未配置の素材が${layout.unplacedPieces.length}枚あります。用紙・方向・余白・寸法または印刷数を調整してください。`);
+  return [...errors.values()];
 }

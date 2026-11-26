@@ -1,23 +1,16 @@
 import type { DungeonDocument } from '../../model/types';
 import { buildPieceExport } from '../../editor/pieces/pieceJson';
 import { buildExportEnvelope, parseImport } from '../../utils/exportImport';
-import { buildPublishDocument, buildScenarioPublishDocument } from '../publishDocumentBuilder';
-import { buildPublishMapGeometry } from '../publishMapGeometry';
-import { renderPublishSvg } from '../PublishMapRenderer';
 import type { PublishAudience, PublishProfile } from '../publishProfile';
 import { validatePublishProfile } from '../publishProfile';
 import { svgToPng, validatePngDimensions } from '../exporters';
 import type { ScenarioGuideOptions } from '../scenario/scenarioGuide';
-import { buildScenarioGuide, renderScenarioMap } from '../scenario/scenarioGuideBuilder';
-import { createScenarioHtmlRenderer } from '../scenario/scenarioHtmlRenderer';
-import { buildPrintLayout } from '../print/printLayout';
-import { renderMapPrintDocument, renderScenarioPrintDocument } from '../print/printDocument';
-import { changePrintTarget, MAX_PRINT_MAP_CELLS } from '../print/printProfile';
+import { changePrintTarget } from '../print/printProfile';
 import type { PrintProfile } from '../print/printProfile';
-import { buildCorridorInventory, buildDungeonInventory, buildLibraryInventory, withPrintQuantities } from '../pieceSheet/inventory';
 import type { PieceSheetSelection } from '../pieceSheet/inventory';
-import { buildPieceSheetLayout } from '../pieceSheet/layout';
-import { renderPieceSheetDocument } from '../pieceSheet/renderer';
+import { createPublicationSession } from '../publicationSession';
+import { issueMessages, publicationIssue, needsAcknowledgement, PublicationIssueError } from '../publicationIssues';
+import type { PublicationIssue } from '../publicationIssues';
 import { inventoryCsv, packageArtifact } from './packageFiles';
 import { MAX_PACKAGE_PNG_PIXELS, MAX_PACKAGE_PRINT_PAGES, referencedCustomPieces } from './packagePlan';
 import type { PackageArtifactRequest } from './packagePlan';
@@ -32,52 +25,28 @@ export function packagePublishProfile(base: PublishProfile, audience: PublishAud
 /** Generators receive a captured snapshot and return data; none download files or open print windows. */
 export function createArtifactGenerator(source: DungeonDocument, settings: PackageSettings, title: string,
   allowIncomplete = false, png = svgToPng, createdAt = new Date().toISOString()) {
-  const geometries = new Map<PublishAudience, ReturnType<typeof buildPublishMapGeometry>>();
-  const maps = new Map<PublishAudience, ReturnType<typeof renderPublishSvg>>();
-  const guides = new Map<PublishAudience, string>();
-  const inventories = new Map<PublishAudience, ReturnType<typeof buildDungeonInventory>>();
-  const renderHtml = createScenarioHtmlRenderer(), warnings = new Set<string>();
+  const session = createPublicationSession(source), warnings = new Set<string>();
   let pngPixels = 0, printPages = 0;
-  const warn = (audience: PublishAudience, messages: string[]) => {
-    if (!messages.length) return;
-    const text = `${audience.toUpperCase()}: ${messages.join(' ')}`;
-    if (!allowIncomplete) throw new Error(`${text} 警告を確認し、出力の許可を選択してください。`);
+  const warn = (audience: PublishAudience, issues: PublicationIssue[]) => {
+    if (!issues.length) return;
+    const text = `${audience.toUpperCase()}: ${issueMessages(issues).join(' ')}`;
+    if (needsAcknowledgement(issues) && !allowIncomplete) throw new PublicationIssueError(issues, ' 警告を確認し、出力の許可を選択してください。', `${audience.toUpperCase()}: `);
     warnings.add(text);
   };
-  const geometry = (audience: PublishAudience) => {
-    if (!geometries.has(audience)) {
-      if (source.rooms.reduce((n, r) => n + (r.piece?.cells.length ?? 0), 0) > MAX_PRINT_MAP_CELLS) throw new Error(`部屋床は${MAX_PRINT_MAP_CELLS.toLocaleString()}セルまでです。`);
-      geometries.set(audience, buildPublishMapGeometry(buildPublishDocument(source, audience)));
-    }
-    const value = geometries.get(audience)!;
-    if (value.unresolvedCount) warn(audience, [`未解決の接続が${value.unresolvedCount}件あります。`]);
-    return value;
-  };
-  const map = (audience: PublishAudience) => {
-    if (!maps.has(audience)) maps.set(audience, renderPublishSvg(geometry(audience), packagePublishProfile(settings.publish, audience)));
-    return maps.get(audience)!;
-  };
+  const profile = (audience: PublishAudience) => packagePublishProfile(settings.publish, audience);
+  const geometryIssues = (audience: PublishAudience) => { session.assertMapCells(); warn(audience, session.mapIssues(audience)); };
+  const map = (audience: PublishAudience) => { geometryIssues(audience); return session.map(profile(audience)); };
   const guide = (audience: PublishAudience) => {
-    if (!guides.has(audience)) {
-      const profile = packagePublishProfile(settings.publish, audience), options = settings.guides[audience];
-      const document = buildScenarioPublishDocument({ ...source, name: title }, profile, options);
-      const svg = options.includeMap ? renderScenarioMap(geometry(audience), document, profile).svg : undefined;
-      guides.set(audience, renderHtml(buildScenarioGuide(document, options, svg ? { audience, svg } : undefined)));
-    }
-    return guides.get(audience)!;
+    const value = session.guide(profile(audience), settings.guides[audience], title);
+    if (settings.guides[audience].includeMap) geometryIssues(audience);
+    return value.html;
   };
   const inventory = (audience: PublishAudience) => {
-    if (!inventories.has(audience)) {
-      const selected = settings.pieces;
-      const value = selected.options.source === 'dungeon' ? buildDungeonInventory(source, audience, selected.options.includeGeneratedCorridors, () => geometry(audience))
-        : selected.options.source === 'corridor-tiles' ? buildCorridorInventory()
-        : selected.library ? buildLibraryInventory(selected.library, audience) : (() => { throw new Error('ピース印刷でライブラリを取得し、素材を選択してください。'); })();
-      const items = withPrintQuantities(value.items, selected.quantities);
-      warn(audience, value.warnings);
-      if (items.some(i => i.printQuantity < i.requiredQuantity)) warnings.add(`${audience.toUpperCase()}: 必要数量より印刷数が少ない素材があります。`);
-      inventories.set(audience, { ...value, items });
-    }
-    return inventories.get(audience)!;
+    if (settings.pieces.options.source === 'dungeon') geometryIssues(audience);
+    const value = session.inventory(audience, settings.pieces, 'package');
+    warn(audience, value.issues);
+    if (value.items.some(i => i.printQuantity < i.requiredQuantity)) warn(audience, [publicationIssue('insufficient-quantity', '必要数量より印刷数が少ない素材があります。')]);
+    return value;
   };
   const countPages = (n: number) => {
     printPages += n;
@@ -96,16 +65,15 @@ export function createArtifactGenerator(source: DungeonDocument, settings: Packa
         data = new Uint8Array(await blob.arrayBuffer()); break;
       }
       case 'scenario-guide': data = guide(audience); break;
-      case 'scenario-print': data = renderScenarioPrintDocument(guide(audience), changePrintTarget(settings.print, 'scenario-guide')); break;
+      case 'scenario-print': { guide(audience); data = session.guidePrint(profile(audience), settings.guides[audience], changePrintTarget(settings.print, 'scenario-guide'), title); break; }
       case 'reference-map-print': case 'battle-map-print': {
-        const profile = changePrintTarget(settings.print, request.kind === 'battle-map-print' ? 'battle-map' : 'reference-map');
-        const svg = map(audience), layout = buildPrintLayout(svg.bounds, profile); countPages(layout.pages.length);
-        data = renderMapPrintDocument(svg.svg, layout, profile, title, audience); break;
+        const print = changePrintTarget(settings.print, request.kind === 'battle-map-print' ? 'battle-map' : 'reference-map');
+        map(audience); const value = session.mapPrint(profile(audience), print, title); countPages(value.layout.pages.length);
+        data = value.html; break;
       }
       case 'piece-sheets': {
-        const items = inventory(audience).items, options = settings.pieces.options;
-        const layout = buildPieceSheetLayout(items, settings.print, options); countPages(layout.pages.length);
-        data = renderPieceSheetDocument(items, layout, settings.print, options); break;
+        inventory(audience); const value = session.pieceSheet(audience, settings.pieces, settings.print, 'package'); countPages(value.layout.pages.length);
+        data = value.html(); break;
       }
       case 'piece-inventory': data = inventoryCsv(inventory(audience).items, audience); break;
       case 'project-json': {

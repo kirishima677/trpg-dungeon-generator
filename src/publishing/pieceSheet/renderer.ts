@@ -1,3 +1,4 @@
+import { canPreviewPieceSheet, PublicationIssueError } from '../publicationIssues';
 import type { PrintProfile } from '../print/printProfile';
 import { BATTLE_PRINT_INSTRUCTIONS, checkPrintDocumentSize, escapeHtml, printDocumentStyles, renderPrintScale } from '../print/printDocument';
 import type { PieceInventoryItem, PieceSheetOptions } from './inventory';
@@ -11,7 +12,7 @@ export function renderPieceSheetDocument(items: readonly PieceInventoryItem[], l
   options: PieceSheetOptions, pageIndex?: number) {
   const errors = validatePieceSheetLayout(layout, items, profile, options);
   // A partial single-page preview is useful for explaining oversized pieces; never export it as a complete document.
-  if (errors.length && (pageIndex === undefined || errors.some(e => !e.startsWith('未配置の素材')))) throw new Error(errors.join(' '));
+  if (errors.length && (pageIndex === undefined || !canPreviewPieceSheet(errors))) throw new PublicationIssueError(errors);
   if (!layout.totalPieces || !layout.pages.length) throw new Error('印刷する素材を選択してください。');
   const pages = pageIndex === undefined ? layout.pages : [layout.pages[pageIndex]];
   if (pages.some(p => !p)) throw new Error('表示するページがありません。');
