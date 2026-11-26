@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import type { DungeonDocument, Piece } from '../../model/types';
 import { DEFAULT_PIECES } from '../../model/pieceLibrary';
 import { pieceRepository } from '../../repository/pieceRepository';
@@ -6,9 +7,9 @@ import type { PublishProfile } from '../../publishing/publishProfile';
 import type { PublishMapGeometry } from '../../publishing/publishMapGeometry';
 import type { PrintProfile } from '../../publishing/print/printProfile';
 import { BATTLE_PRINT_INSTRUCTIONS } from '../../publishing/print/printDocument';
-import { buildCorridorInventory, buildDungeonInventory, buildLibraryInventory, defaultPieceSheetOptions,
+import { buildCorridorInventory, buildDungeonInventory, buildLibraryInventory,
   MAX_QUANTITY_PER_ITEM, withPrintQuantities } from '../../publishing/pieceSheet/inventory';
-import type { PieceSheetOptions } from '../../publishing/pieceSheet/inventory';
+import type { PieceSheetOptions, PieceSheetSelection } from '../../publishing/pieceSheet/inventory';
 import { buildPieceSheetLayout, validatePieceSheetLayout } from '../../publishing/pieceSheet/layout';
 import { buildPrintablePiece } from '../../publishing/pieceSheet/artwork';
 import { renderPieceSheetDocument } from '../../publishing/pieceSheet/renderer';
@@ -17,21 +18,23 @@ import { PrintSettings } from './PrintSettings';
 const errorMessage = (e: unknown) => e instanceof Error ? e.message : '印刷シートを生成できません。';
 const categories = { room: '部屋', 'manual-corridor': '手動配置通路', 'generated-corridor': '自動生成通路タイル', other: 'その他' } as const;
 
-export function PieceSheetPanel({ snapshot, audience, printProfile, busy, resolve, onAudience, onProfile, onExport, closePrint, notice, error }: {
+export function PieceSheetPanel({ snapshot, audience, printProfile, busy, resolve, onAudience, onProfile, onExport, closePrint, notice, error, selection: sheetSelection, onSelection }: {
+  selection: PieceSheetSelection; onSelection: Dispatch<SetStateAction<PieceSheetSelection>>;
   snapshot: DungeonDocument | null; audience: PublishProfile['audience']; printProfile: PrintProfile; busy: boolean;
   resolve: (audience: PublishProfile['audience']) => PublishMapGeometry | null;
   onAudience: (audience: PublishProfile['audience']) => void; onProfile: (profile: PrintProfile) => void;
   onExport: (html: string, print: boolean) => void; closePrint: (() => void) | undefined; notice: string; error: string;
 }) {
-  const [options, setOptions] = useState(defaultPieceSheetOptions), [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [library, setLibrary] = useState<Piece[] | null>(null), [libraryError, setLibraryError] = useState('');
+  const { options, quantities, library } = sheetSelection;
+  const setOptions = (value: SetStateAction<PieceSheetOptions>) => onSelection(s => ({ ...s, options: typeof value === 'function' ? value(s.options) : value }));
+  const setQuantities = (value: SetStateAction<Record<string, number>>) => onSelection(s => ({ ...s, quantities: typeof value === 'function' ? value(s.quantities) : value }));
+  const setLibrary = (value: Piece[] | null) => onSelection(s => ({ ...s, library: value }));
+  const [libraryError, setLibraryError] = useState('');
   const [reload, setReload] = useState(0), [loading, setLoading] = useState(false);
   const [allowIncomplete, setAllowIncomplete] = useState(false), [selectedPage, setPage] = useState(0);
+  useEffect(() => { setAllowIncomplete(false); setPage(0); }, [snapshot]);
   useEffect(() => {
-    if (options.source === 'dungeon') { setQuantities({}); setAllowIncomplete(false); setPage(0); }
-  }, [snapshot, options.source]);
-  useEffect(() => {
-    if (options.source !== 'library') return;
+    if (options.source !== 'library' || (library && reload === 0)) return;
     let active = true;
     setLoading(true); setLibraryError('');
     pieceRepository.list().then(pieces => {

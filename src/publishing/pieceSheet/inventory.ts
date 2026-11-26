@@ -17,6 +17,8 @@ export interface PieceSheetOptions {
 export const defaultPieceSheetOptions = (): PieceSheetOptions => ({ source: 'dungeon', includeGeneratedCorridors: true,
   allowRotation: true, pieceGapMm: 3, showGrid: true, showPieceLabels: true, showCutLines: true,
   showConnectorMarks: false, separateRoomsAndCorridors: false });
+export interface PieceSheetSelection { options: PieceSheetOptions; quantities: Record<string, number>; library: Piece[] | null }
+export const defaultPieceSheetSelection = (): PieceSheetSelection => ({ options: defaultPieceSheetOptions(), quantities: {}, library: null });
 export interface PieceInventoryItem {
   id: string; source: 'piece-library' | 'generated-corridor'; pieceId?: string; corridorMask?: number;
   name: string; code: string; category: PieceCategory; standard: boolean; piece: Piece;
@@ -81,12 +83,12 @@ function material(piece: Piece, index: number, audience: PublishAudience, generi
   return { id: `piece:${piece.id}`, pieceId: piece.id, source: 'piece-library', name, code, category,
     standard: isStandardPiece(piece.id), piece: safe, requiredQuantity: 0, printQuantity: 0 };
 }
-export function buildLibraryInventory(pieces: readonly Piece[]): PieceInventory {
+export function buildLibraryInventory(pieces: readonly Piece[], audience: PublishAudience = 'gm'): PieceInventory {
   if (pieces.length > MAX_INVENTORY_ITEMS) throw new Error(`素材は${MAX_INVENTORY_ITEMS}種類までです。`);
   const ids = new Set<string>();
   return { warnings: [], items: [...pieces].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0).map((p, i) => {
     if (ids.has(p.id)) throw new Error('ライブラリのPiece IDが重複しています。');
-    ids.add(p.id); return material(p, i, 'gm', false);
+    ids.add(p.id); return material(p, i, audience, audience === 'player');
   }) };
 }
 export function buildCorridorInventory(): PieceInventory {
