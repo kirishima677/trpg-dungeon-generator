@@ -225,6 +225,8 @@ PDF本体は収録せず、独立した印刷用HTMLを同梱します。GM用�
 
 ピース印刷は全体の印刷用HTMLと選択ページのプレビューを分けて保持します。[ページ切り替えの最適化と検証](docs/piece-preview-performance.md) に詳細を記載しています。
 
+各画面は必要になったときに読み込みます。[画面読み込みの分割と検証](docs/window-lazy-loading.md) に構成とビルド容量の比較を記載しています。
+
 ![ZIP Publication Package](docs/images/zip-package-complete.jpg)
 
 ### 保存
