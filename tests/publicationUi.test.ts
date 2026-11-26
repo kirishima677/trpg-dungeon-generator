@@ -136,3 +136,23 @@ test('print action uses the displayed player HTML, prevents duplicate execution 
   } finally { await unmount(); }
   assert.equal(closes, 1);
 });
+test('piece page navigation previews one page while download and print retain the complete document', async () => {
+  const exported: Blob[] = []; let printed = '';
+  const unmount = await mount({ download: blob => { exported.push(blob); }, createPrinter: () => ({ busy: false, hasWindows: false,
+    print: async html => { printed = html; }, close() {} }) });
+  try {
+    await click('ピース印刷'); await number('R-001の印刷数', '6');
+    await act(async () => { button('印刷用HTMLを保存').click(); });
+    const initial = await exported[0].text(), all = new JSDOM(initial);
+    const pages = all.window.document.querySelectorAll('.print-sheet').length; all.window.close(); assert.ok(pages > 1);
+    await click('Page 2');
+    const preview = new JSDOM(doc.querySelector('iframe[title="ピース印刷シート"]')!.getAttribute('srcdoc')!);
+    assert.equal(preview.window.document.querySelectorAll('.print-sheet').length, 1);
+    assert.equal(preview.window.document.querySelector('.print-sheet')!.getAttribute('aria-label'), 'Page 2'); preview.window.close();
+    await act(async () => { button('印刷用HTMLを保存').click(); }); assert.equal(await exported[1].text(), initial);
+    await act(async () => { button('印刷 / PDF保存').click(); }); assert.equal(printed, initial);
+    await number('R-001の印刷数', '1'); await act(async () => { button('印刷用HTMLを保存').click(); });
+    assert.notEqual(await exported[2].text(), initial);
+    assert.equal(button('Page 1').getAttribute('aria-pressed'), 'true');
+  } finally { await unmount(); }
+});

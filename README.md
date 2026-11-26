@@ -223,6 +223,8 @@ PDF本体は収録せず、独立した印刷用HTMLを同梱します。GM用�
 
 個別出力とZIP出力は共通の出版生成処理を利用します。画面の責務分離と出力互換性の検証については [出版処理リファクタリング](docs/publication-refactor.md) を参照してください。
 
+ピース印刷は全体の印刷用HTMLと選択ページのプレビューを分けて保持します。[ページ切り替えの最適化と検証](docs/piece-preview-performance.md) に詳細を記載しています。
+
 ![ZIP Publication Package](docs/images/zip-package-complete.jpg)
 
 ### 保存
