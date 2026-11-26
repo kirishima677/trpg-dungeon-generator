@@ -15,7 +15,7 @@ ${guide.mapSvg ? '<li><a href="#guide-map">ダンジョンマップ</a></li>' : 
 <li><a href="#guide-rooms">部屋ガイド</a><ul>${guide.rooms.map(room => `<li><a href="#${room.anchorId}">${heading(room)}</a></li>`).join('')}</ul></li></ul></nav>` : '';
   const overview = guide.scenarioMarkdown ? `<section id="guide-overview"><h2>ダンジョン概要</h2>${markdown(guide.scenarioMarkdown)}</section>` : '';
   const map = guide.mapSvg ? `<section id="guide-map"><h2>ダンジョンマップ</h2><div class="map-container">${guide.mapSvg}</div></section>` : '';
-  const rooms = guide.rooms.map(room => `<article id="${room.anchorId}" class="room-guide"><h3>${heading(room)}</h3>
+  const rooms = guide.rooms.map(room => `<article id="${room.anchorId}" class="room-guide${[room.description, room.gmNotes, ...(room.tags ?? [])].join('').length <= 800 ? ' room-guide--short' : ''}"><h3>${heading(room)}</h3>
 ${room.description ? `<section><h4>公開説明</h4>${markdown(room.description)}</section>` : ''}
 ${room.gmNotes ? `<section class="gm-notes"><h4>GM専用情報</h4>${markdown(room.gmNotes)}</section>` : ''}
 ${room.tags?.length ? `<p class="tags"><strong>タグ:</strong> ${room.tags.map(escapeHtml).join(', ')}</p>` : ''}</article>`).join('');
