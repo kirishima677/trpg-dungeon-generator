@@ -13,6 +13,7 @@ import { MAX_QUANTITY_PER_ITEM } from '../../publishing/pieceSheet/inventory';
 import type { PieceSheetOptions, PieceSheetSelection } from '../../publishing/pieceSheet/inventory';
 import { buildPrintablePiece } from '../../publishing/pieceSheet/artwork';
 import { PrintSettings } from './PrintSettings';
+import { usePieceSheetPreview } from './usePieceSheetPreview';
 
 const errorMessage = (e: unknown) => e instanceof Error ? e.message : '印刷シートを生成できません。';
 const categories = { room: '部屋', 'manual-corridor': '手動配置通路', 'generated-corridor': '自動生成通路タイル', other: 'その他' } as const;
@@ -55,13 +56,7 @@ export function PieceSheetPanel({ snapshot, audience, printProfile, busy, sessio
     catch (e) { return { value: null, error: errorMessage(e) }; }
   }, [selection.value, printProfile, options]);
   const pageIndex = Math.max(0, Math.min(selectedPage, (result.value?.layout.pages.length ?? 1) - 1));
-  const output = useMemo(() => {
-    try {
-      const value = result.value;
-      if (!value?.layout.pages.length) return { html: '', preview: '', error: '' };
-      return { html: value.issues.length ? '' : value.html(), preview: value.html(pageIndex), error: '' };
-    } catch (e) { return { html: '', preview: '', error: errorMessage(e) }; }
-  }, [result.value, pageIndex]);
+  const output = usePieceSheetPreview(result.value, pageIndex);
   const selectedItems = selection.value?.items ?? [];
   const thumbnails = useMemo(() => new Map((inventory.value?.items ?? []).map(i => {
     const a = buildPrintablePiece(i, 0, options);
