@@ -24,3 +24,13 @@
 .publishing aside fieldset + fieldset { margin-top: 14px; }
 .publish-preview-scroll { overflow: auto; max-height: 78vh; min-height: 240px; border: 1px solid #cbd5e1; background-color: #e2e8f0; background-image: conic-gradient(#cbd5e1 25%, transparent 0 50%, #cbd5e1 0 75%, transparent 0); background-size: 20px 20px; }
 @media (max-width: 700px) { .publish-layout { grid-template-columns: minmax(0, 1fr); } .publishing { padding: 12px; } }
+
+.publish-modes { flex-wrap: wrap; }
+.piece-sheet-content { min-width: 0; }
+.piece-inventory-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; max-height: 500px; overflow: auto; margin-top: 14px; padding: 2px; }
+.piece-inventory-item { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 10px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: white; }
+.piece-inventory-item img { width: 64px; height: 64px; object-fit: contain; }
+.piece-inventory-item p { margin: 4px 0; font-size: 12px; }
+.piece-inventory-item strong { overflow-wrap: anywhere; }
+.piece-sheet-summary { padding: 10px; margin: 14px 0; background: #e0f2fe; border-radius: 6px; }
+.piece-sheet-summary p { margin: 3px 0; }

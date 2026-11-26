@@ -19,6 +19,7 @@ import { defaultPrintProfile, MAX_PRINT_MAP_CELLS } from '../../publishing/print
 import { buildPrintLayout } from '../../publishing/print/printLayout';
 import { BATTLE_PRINT_INSTRUCTIONS, renderMapPrintDocument, renderScenarioPrintDocument } from '../../publishing/print/printDocument';
 import { createBrowserPrintAdapter } from '../../publishing/print/browserPrint';
+import { PieceSheetPanel } from './PieceSheetPanel';
 import './publishing.css';
 
 function useBlobUrl(blob: Blob | null) {
@@ -35,7 +36,7 @@ const message = (e: unknown) => e instanceof Error ? e.message : 'マップの�
 export function PublishingWindow() {
   const [snapshot, setSnapshot] = useState<DungeonDocument | null>(null);
   const [profile, setProfile] = useState(defaultPublishProfile);
-  const [view, setView] = useState<'map' | 'guide' | 'print'>('map');
+  const [view, setView] = useState<'map' | 'guide' | 'print' | 'pieces'>('map');
   const [printProfile, setPrintProfile] = useState(defaultPrintProfile);
   const [printPage, setPrintPage] = useState(0);
   const printer = useMemo(() => createBrowserPrintAdapter(), []);
@@ -80,7 +81,7 @@ export function PublishingWindow() {
     };
   }, [snapshot]);
   const guideView = view === 'guide' || (view === 'print' && printProfile.target === 'scenario-guide');
-  const needsMap = !guideView || guideOptions.includeMap;
+  const needsMap = view !== 'pieces' && (!guideView || guideOptions.includeMap);
   const scenarioDocument = useMemo(() => {
     try { return { value: snapshot && guideView ? buildScenarioPublishDocument(snapshot, profile, guideOptions) : null, error: '' }; }
     catch (e) { return { value: null, error: message(e) }; }
@@ -161,14 +162,26 @@ export function PublishingWindow() {
     catch (e) { if (mounted.current) setError(message(e)); }
     finally { exporting.current = false; if (mounted.current) setBusy(false); }
   };
+  const exportPieceSheets = async (html: string, print: boolean) => {
+    if (exporting.current || !html) return;
+    exporting.current = true; setBusy(true); setError(''); setNotice('');
+    try {
+      if (print) await printer.print(html);
+      else downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), 'piece-sheets.html');
+      if (mounted.current) setNotice(print ? '印刷画面の処理を終了しました。' : 'ピース印刷用HTMLを書き出しました。');
+    } catch (e) { if (mounted.current) setError(message(e)); }
+    finally { exporting.current = false; if (mounted.current) setBusy(false); }
+  };
   const disabled = busy || (view === 'print' ? !printDocument.value : view === 'guide' ? !guideOutput.value : !output.value) || Boolean(unresolved && !allowUnresolved);
   return <main className="publishing">
     <header><h1>出版 / マップ・ガイド・印刷</h1><p>{snapshot?.name ?? '読み込み中…'}</p>
       <p>開いた時点の編集内容を使用します。最新の状態は編集画面の「出版」から取り込めます。</p>
       <p className="publish-help">全体MarkdownはMarkdownエディタで保存してから取り込んでください。出版操作で自動保存は行いません。</p></header>
-    <nav className="publish-modes" aria-label="出版形式">{([['map', 'マップ出力'], ['guide', 'シナリオガイド'], ['print', '印刷 / PDF']] as const).map(([mode, label]) =>
+    <nav className="publish-modes" aria-label="出版形式">{([['map', 'マップ出力'], ['guide', 'シナリオガイド'], ['print', '印刷 / PDF'], ['pieces', 'ピース印刷']] as const).map(([mode, label]) =>
       <button key={mode} disabled={busy} aria-pressed={view === mode} onClick={() => { setView(mode); setNotice(''); setError(''); }}>{label}</button>)}</nav>
-    <div className="publish-layout">
+    {view === 'pieces' ? <PieceSheetPanel snapshot={snapshot} audience={profile.audience} printProfile={printProfile} busy={busy}
+      resolve={resolve} onAudience={audience => update({ audience })} onProfile={setPrintProfile}
+      onExport={(html, print) => void exportPieceSheets(html, print)} closePrint={printer.hasWindows ? printer.close : undefined} notice={notice} error={error} /> : <div className="publish-layout">
       <aside>{view === 'print' && <PrintSettings profile={printProfile} disabled={busy} onChange={value => { setPrintProfile(value); setPrintPage(0); setError(''); setNotice(''); }} />}
       <fieldset disabled={busy}><legend>出力設定</legend>
         <label>対象<select value={profile.audience} onChange={e => {
@@ -220,6 +233,6 @@ export function PublishingWindow() {
           {svgUrl && <img src={svgUrl} alt="出版用マップ" style={{ width: '100%', height: 'auto', display: 'block' }} />}
         </div></div>
       </section>}
-    </div>
+    </div>}
   </main>;
 }
