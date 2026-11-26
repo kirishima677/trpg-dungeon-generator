@@ -209,6 +209,20 @@ JSONはGM専用情報も含む完全なプロジェクトデータです。プ�
 
 ![Piece Print Sheets](docs/images/piece-sheet-corridor-tiles.jpg)
 
+### ZIPパッケージ / 一括出版
+
+- 出版画面の「一括出版」で、プレイヤー用・GM用・完全版を選び、収録予定のファイルを確認する
+- SVG／PNG、HTMLガイド、印刷用HTML、ピースシート、必要数量CSV、プロジェクトJSONを選択してZIPへまとめる
+- 各出版タブの設定とピース印刷数量を引き継ぎ、同じスナップショットから順番に生成する
+- プレイヤー用へのGM・制作データの混入を拒否し、秘密情報を公開範囲別の抽出段階で除外する
+- manifest・READMEを同梱し、完全版のJSONは既存のImport機能で復元できる
+- 進捗表示・キャンセル・多重実行防止・容量制限・失敗時の出力停止に対応する
+
+PDF本体は収録せず、独立した印刷用HTMLを同梱します。GM用・完全版全体はプレイヤーへ配布しないでください。
+操作方法・構成・情報分離・制限・検証範囲は [ZIP一括出版の実装メモ](docs/publication-packages.md) を参照してください。
+
+![ZIP Publication Package](docs/images/zip-package-complete.jpg)
+
 ### 保存
 Dexie + IndexedDB を使用してブラウザローカルに保存します。
 メニューバーの「保存」で保存し、「読込」で保存済みダンジョンを開きます。

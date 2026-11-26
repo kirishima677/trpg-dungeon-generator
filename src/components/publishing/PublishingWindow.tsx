@@ -20,6 +20,9 @@ import { buildPrintLayout } from '../../publishing/print/printLayout';
 import { BATTLE_PRINT_INSTRUCTIONS, renderMapPrintDocument, renderScenarioPrintDocument } from '../../publishing/print/printDocument';
 import { createBrowserPrintAdapter } from '../../publishing/print/browserPrint';
 import { PieceSheetPanel } from './PieceSheetPanel';
+import { PackagePanel } from './PackagePanel';
+import { defaultPackageProfile } from '../../publishing/package/packagePlan';
+import { defaultPieceSheetSelection } from '../../publishing/pieceSheet/inventory';
 import './publishing.css';
 
 function useBlobUrl(blob: Blob | null) {
@@ -36,7 +39,7 @@ const message = (e: unknown) => e instanceof Error ? e.message : 'マップの�
 export function PublishingWindow() {
   const [snapshot, setSnapshot] = useState<DungeonDocument | null>(null);
   const [profile, setProfile] = useState(defaultPublishProfile);
-  const [view, setView] = useState<'map' | 'guide' | 'print' | 'pieces'>('map');
+  const [view, setView] = useState<'map' | 'guide' | 'print' | 'pieces' | 'package'>('map');
   const [printProfile, setPrintProfile] = useState(defaultPrintProfile);
   const [printPage, setPrintPage] = useState(0);
   const printer = useMemo(() => createBrowserPrintAdapter(), []);
@@ -44,7 +47,11 @@ export function PublishingWindow() {
     window.addEventListener('pagehide', printer.close);
     return () => { window.removeEventListener('pagehide', printer.close); printer.close(); };
   }, [printer]);
-  const [guideOptions, setGuideOptions] = useState(() => defaultScenarioGuideOptions('player'));
+  const [guideProfiles, setGuideProfiles] = useState(() => ({ player: defaultScenarioGuideOptions('player'), gm: defaultScenarioGuideOptions('gm') }));
+  const guideOptions = guideProfiles[profile.audience];
+  const setGuideOptions = (value: typeof guideOptions) => setGuideProfiles(p => ({ ...p, [profile.audience]: value }));
+  const [sheetSelection, setSheetSelection] = useState(defaultPieceSheetSelection);
+  const [packageProfile, setPackageProfile] = useState(defaultPackageProfile);
   const [preset, setPreset] = useState('64');
   const [zoom, setZoom] = useState(100);
   const [error, setError] = useState('');
@@ -65,6 +72,7 @@ export function PublishingWindow() {
     channel.onmessage = event => {
       if (!isPublishSnapshot(event.data, token, dungeonId)) return;
       snapshotRevision.current++;
+      setSheetSelection(s => s.options.source === 'dungeon' ? { ...s, quantities: {} } : s);
       clearTimeout(timeout); setSnapshot(event.data.document); setError(''); setNotice(''); setAllowUnresolved(false); setPng(null);
     };
     channel.postMessage({ type: 'request', token, dungeonId });
@@ -81,7 +89,7 @@ export function PublishingWindow() {
     };
   }, [snapshot]);
   const guideView = view === 'guide' || (view === 'print' && printProfile.target === 'scenario-guide');
-  const needsMap = view !== 'pieces' && (!guideView || guideOptions.includeMap);
+  const needsMap = view !== 'pieces' && view !== 'package' && (!guideView || guideOptions.includeMap);
   const scenarioDocument = useMemo(() => {
     try { return { value: snapshot && guideView ? buildScenarioPublishDocument(snapshot, profile, guideOptions) : null, error: '' }; }
     catch (e) { return { value: null, error: message(e) }; }
@@ -177,16 +185,15 @@ export function PublishingWindow() {
     <header><h1>出版 / マップ・ガイド・印刷</h1><p>{snapshot?.name ?? '読み込み中…'}</p>
       <p>開いた時点の編集内容を使用します。最新の状態は編集画面の「出版」から取り込めます。</p>
       <p className="publish-help">全体MarkdownはMarkdownエディタで保存してから取り込んでください。出版操作で自動保存は行いません。</p></header>
-    <nav className="publish-modes" aria-label="出版形式">{([['map', 'マップ出力'], ['guide', 'シナリオガイド'], ['print', '印刷 / PDF'], ['pieces', 'ピース印刷']] as const).map(([mode, label]) =>
+    <nav className="publish-modes" aria-label="出版形式">{([['map', 'マップ出力'], ['guide', 'シナリオガイド'], ['print', '印刷 / PDF'], ['pieces', 'ピース印刷'], ['package', '一括出版']] as const).map(([mode, label]) =>
       <button key={mode} disabled={busy} aria-pressed={view === mode} onClick={() => { setView(mode); setNotice(''); setError(''); }}>{label}</button>)}</nav>
-    {view === 'pieces' ? <PieceSheetPanel snapshot={snapshot} audience={profile.audience} printProfile={printProfile} busy={busy}
+    {view === 'package' ? <PackagePanel profile={packageProfile} onProfile={setPackageProfile} snapshot={snapshot} settings={{ publish: profile, guides: guideProfiles, print: printProfile, pieces: sheetSelection }} onBusy={setBusy} /> : view === 'pieces' ? <PieceSheetPanel selection={sheetSelection} onSelection={setSheetSelection} snapshot={snapshot} audience={profile.audience} printProfile={printProfile} busy={busy}
       resolve={resolve} onAudience={audience => update({ audience })} onProfile={setPrintProfile}
       onExport={(html, print) => void exportPieceSheets(html, print)} closePrint={printer.hasWindows ? printer.close : undefined} notice={notice} error={error} /> : <div className="publish-layout">
       <aside>{view === 'print' && <PrintSettings profile={printProfile} disabled={busy} onChange={value => { setPrintProfile(value); setPrintPage(0); setError(''); setNotice(''); }} />}
       <fieldset disabled={busy}><legend>出力設定</legend>
         <label>対象<select value={profile.audience} onChange={e => {
           const audience = e.target.value as PublishProfile['audience'], defaults = defaultPublishProfile(audience);
-          setGuideOptions(defaultScenarioGuideOptions(audience));
           update({ audience, showRoomNumbers: defaults.showRoomNumbers, showRoomNames: defaults.showRoomNames });
         }}><option value="player">プレイヤー用</option><option value="gm">GM用</option></select></label>
         {([['showGrid', 'グリッド'], ['showRoomNumbers', '部屋番号'], ['showRoomNames', '部屋名称']] as const).filter(([key]) => !guideView || key !== 'showRoomNumbers').map(([key, label]) =>

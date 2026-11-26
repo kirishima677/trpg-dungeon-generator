@@ -34,3 +34,9 @@
 .piece-inventory-item strong { overflow-wrap: anywhere; }
 .piece-sheet-summary { padding: 10px; margin: 14px 0; background: #e0f2fe; border-radius: 6px; }
 .piece-sheet-summary p { margin: 3px 0; }
+
+.publishing input[type=text] { box-sizing: border-box; width: 100%; padding: 6px; color: #0f172a; border: 1px solid #94a3b8; border-radius: 4px; font: inherit; }
+.package-file-list { padding: 0; list-style: none; border: 1px solid #cbd5e1; background: white; border-radius: 6px; }
+.package-file-list li { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+.package-file-list span { color: #475569; font-size: 12px; }
+.package-panel progress { width: 100%; max-width: 500px; }
