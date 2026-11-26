@@ -221,6 +221,8 @@ JSONはGM専用情報も含む完全なプロジェクトデータです。プ�
 PDF本体は収録せず、独立した印刷用HTMLを同梱します。GM用・完全版全体はプレイヤーへ配布しないでください。
 操作方法・構成・情報分離・制限・検証範囲は [ZIP一括出版の実装メモ](docs/publication-packages.md) を参照してください。
 
+個別出力とZIP出力は共通の出版生成処理を利用します。画面の責務分離と出力互換性の検証については [出版処理リファクタリング](docs/publication-refactor.md) を参照してください。
+
 ![ZIP Publication Package](docs/images/zip-package-complete.jpg)
 
 ### 保存

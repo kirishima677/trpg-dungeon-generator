@@ -4,24 +4,23 @@ import type { DungeonDocument, Piece } from '../../model/types';
 import { DEFAULT_PIECES } from '../../model/pieceLibrary';
 import { pieceRepository } from '../../repository/pieceRepository';
 import type { PublishProfile } from '../../publishing/publishProfile';
-import type { PublishMapGeometry } from '../../publishing/publishMapGeometry';
+import type { PublicationSession } from '../../publishing/publicationSession';
+import { preparePieceSheet } from '../../publishing/publicationSession';
+import { issueMessages, needsAcknowledgement } from '../../publishing/publicationIssues';
 import type { PrintProfile } from '../../publishing/print/printProfile';
 import { BATTLE_PRINT_INSTRUCTIONS } from '../../publishing/print/printDocument';
-import { buildCorridorInventory, buildDungeonInventory, buildLibraryInventory,
-  MAX_QUANTITY_PER_ITEM, withPrintQuantities } from '../../publishing/pieceSheet/inventory';
+import { MAX_QUANTITY_PER_ITEM } from '../../publishing/pieceSheet/inventory';
 import type { PieceSheetOptions, PieceSheetSelection } from '../../publishing/pieceSheet/inventory';
-import { buildPieceSheetLayout, validatePieceSheetLayout } from '../../publishing/pieceSheet/layout';
 import { buildPrintablePiece } from '../../publishing/pieceSheet/artwork';
-import { renderPieceSheetDocument } from '../../publishing/pieceSheet/renderer';
 import { PrintSettings } from './PrintSettings';
 
 const errorMessage = (e: unknown) => e instanceof Error ? e.message : '印刷シートを生成できません。';
 const categories = { room: '部屋', 'manual-corridor': '手動配置通路', 'generated-corridor': '自動生成通路タイル', other: 'その他' } as const;
 
-export function PieceSheetPanel({ snapshot, audience, printProfile, busy, resolve, onAudience, onProfile, onExport, closePrint, notice, error, selection: sheetSelection, onSelection }: {
+export function PieceSheetPanel({ snapshot, audience, printProfile, busy, session, onAudience, onProfile, onExport, closePrint, notice, error, selection: sheetSelection, onSelection }: {
   selection: PieceSheetSelection; onSelection: Dispatch<SetStateAction<PieceSheetSelection>>;
   snapshot: DungeonDocument | null; audience: PublishProfile['audience']; printProfile: PrintProfile; busy: boolean;
-  resolve: (audience: PublishProfile['audience']) => PublishMapGeometry | null;
+  session: PublicationSession;
   onAudience: (audience: PublishProfile['audience']) => void; onProfile: (profile: PrintProfile) => void;
   onExport: (html: string, print: boolean) => void; closePrint: (() => void) | undefined; notice: string; error: string;
 }) {
@@ -43,42 +42,34 @@ export function PieceSheetPanel({ snapshot, audience, printProfile, busy, resolv
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [options.source, reload]);
-  // Source extraction/routing is isolated from quantities, paper, and drawing settings.
   const inventory = useMemo(() => {
-    try {
-      const value = options.source === 'library' ? library ? buildLibraryInventory(library) : null
-        : options.source === 'corridor-tiles' ? buildCorridorInventory()
-        : snapshot ? buildDungeonInventory(snapshot, audience, options.includeGeneratedCorridors, () => resolve(audience)!) : null;
-      return { value, error: '' };
-    } catch (e) { return { value: null, error: errorMessage(e) }; }
-  }, [snapshot, audience, options.source, options.includeGeneratedCorridors, library, resolve]);
+    try { return { value: !snapshot && options.source === 'dungeon' ? null : session.materials(audience, sheetSelection), error: '' }; }
+    catch (e) { return { value: null, error: errorMessage(e) }; }
+  }, [session, snapshot, audience, options.source, options.includeGeneratedCorridors, library]);
   const selection = useMemo(() => {
-    try { return { items: withPrintQuantities(inventory.value?.items ?? [], quantities), error: '' }; }
-    catch (e) { return { items: [], error: errorMessage(e) }; }
-  }, [inventory.value, quantities]);
+    try { return { value: inventory.value ? session.inventory(audience, sheetSelection) : null, error: '' }; }
+    catch (e) { return { value: null, error: errorMessage(e) }; }
+  }, [inventory.value, session, audience, quantities]);
   const result = useMemo(() => {
-    try {
-      if (!inventory.value || selection.error) return { layout: null, errors: [] };
-      const layout = buildPieceSheetLayout(selection.items, printProfile, options);
-      return { layout, errors: validatePieceSheetLayout(layout, selection.items, printProfile, options) };
-    } catch (e) { return { layout: null, errors: [errorMessage(e)] }; }
-  }, [inventory.value, selection, printProfile, options]);
-  const pageIndex = Math.max(0, Math.min(selectedPage, (result.layout?.pages.length ?? 1) - 1));
+    try { return { value: selection.value ? preparePieceSheet(selection.value.items, printProfile, options) : null, error: '' }; }
+    catch (e) { return { value: null, error: errorMessage(e) }; }
+  }, [selection.value, printProfile, options]);
+  const pageIndex = Math.max(0, Math.min(selectedPage, (result.value?.layout.pages.length ?? 1) - 1));
   const output = useMemo(() => {
     try {
-      const layout = result.layout;
-      if (!layout?.pages.length) return { html: '', preview: '', error: '' };
-      return { html: result.errors.length ? '' : renderPieceSheetDocument(selection.items, layout, printProfile, options),
-        preview: renderPieceSheetDocument(selection.items, layout, printProfile, options, pageIndex), error: '' };
+      const value = result.value;
+      if (!value?.layout.pages.length) return { html: '', preview: '', error: '' };
+      return { html: value.issues.length ? '' : value.html(), preview: value.html(pageIndex), error: '' };
     } catch (e) { return { html: '', preview: '', error: errorMessage(e) }; }
-  }, [result, selection.items, printProfile, options, pageIndex]);
+  }, [result.value, pageIndex]);
+  const selectedItems = selection.value?.items ?? [];
   const thumbnails = useMemo(() => new Map((inventory.value?.items ?? []).map(i => {
     const a = buildPrintablePiece(i, 0, options);
     return [i.id, `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 ${a.widthCells * 40 + 4} ${a.heightCells * 40 + 4}">${a.svg}</svg>`];
   })), [inventory.value, options.showGrid, options.showCutLines, options.showConnectorMarks]);
-  const warnings = inventory.value?.warnings ?? [];
-  const deficient = selection.items.filter(i => i.printQuantity < i.requiredQuantity);
-  const blocked = busy || loading || !output.html || Boolean(warnings.length && !allowIncomplete);
+  const issues = inventory.value?.issues ?? [];
+  const deficient = selectedItems.filter(i => i.printQuantity < i.requiredQuantity);
+  const blocked = busy || loading || !output.html || Boolean(needsAcknowledgement(issues) && !allowIncomplete);
   const update = (patch: Partial<PieceSheetOptions>) => {
     setOptions(o => ({ ...o, ...patch })); setPage(0);
     if (patch.source || patch.includeGeneratedCorridors !== undefined) { setQuantities({}); setAllowIncomplete(false); }
@@ -99,10 +90,10 @@ export function PieceSheetPanel({ snapshot, audience, printProfile, busy, resolv
     <PrintSettings pieceSheet profile={printProfile} disabled={busy} onChange={p => { onProfile(p); setPage(0); }} />
     <p className="publish-help">{BATTLE_PRINT_INSTRUCTIONS}</p>
     <p className="publish-help">実寸を維持し、収まらない素材は縮小・分割しません。プレイヤー用は汎用の素材番号を使用します。ライブラリは取得時点の定義を保持します。</p>
-    {warnings.length > 0 && <div className="publish-warning" role="alert">{warnings.map(w => <p key={w}>{w}</p>)}
+    {issues.length > 0 && <div className="publish-warning" role="alert">{issueMessages(issues).map(w => <p key={w}>{w}</p>)}
       <label className="publish-checkbox"><input type="checkbox" disabled={busy} checked={allowIncomplete} onChange={e => setAllowIncomplete(e.target.checked)} />警告を確認して出力する</label></div>}
     {deficient.length > 0 && <p role="alert" className="publish-warning">必要数より印刷数が少ない素材が{deficient.length}種類あります。ダンジョン全体を再構成できない可能性があります。</p>}
-    {[error, libraryError, inventory.error, selection.error, ...result.errors, output.error].filter(Boolean).map((e, i) => <p role="alert" className="publish-error" key={i}>{e}</p>)}
+    {[error, libraryError, inventory.error, selection.error, ...issueMessages(result.value?.issues ?? []), result.error, output.error].filter(Boolean).map((e, i) => <p role="alert" className="publish-error" key={i}>{e}</p>)}
     <div className="publish-actions"><button disabled={blocked} onClick={() => onExport(output.html, true)}>印刷 / PDF保存</button>
       <button disabled={blocked} onClick={() => onExport(output.html, false)}>印刷用HTMLを保存</button>
       {closePrint && <button onClick={closePrint}>印刷画面を閉じる</button>}</div><p role="status">{notice}</p>
@@ -126,13 +117,13 @@ export function PieceSheetPanel({ snapshot, audience, printProfile, busy, resolv
     })}</div>
     {inventory.value?.items.length === 0 && <p>素材がありません。</p>}
     <div className="piece-sheet-summary" aria-label="印刷集計">{Object.entries(categories).map(([key, label]) => {
-      const group = selection.items.filter(i => i.category === key);
+      const group = selectedItems.filter(i => i.category === key);
       return <p key={key}>{label}: 印刷 {group.reduce((n, i) => n + i.printQuantity, 0)}枚{options.source === 'dungeon' ? ` / 必要 ${group.reduce((n, i) => n + i.requiredQuantity, 0)}枚` : ''}</p>;
-    })}<p>合計: {selection.items.reduce((n, i) => n + i.printQuantity, 0)}枚 · {printProfile.paperSize} · Grid: {printProfile.map.cellSizeMm} mm</p>
-      <p>必要用紙: {result.layout?.pages.length ?? 0}枚 · 未配置: {result.layout?.unplacedPieces.length ?? 0}枚</p></div>
-    {Boolean(result.layout?.unplacedPieces.length) && <details open><summary>未配置ピース（縮小せず出力を停止しています）</summary>
-      <ul>{result.layout!.unplacedPieces.map(p => <li key={p.instanceId}>{p.name}: 余白・ラベル込み {p.widthMm.toFixed(2)} × {p.heightMm.toFixed(2)} mm — {p.reason === 'oversized' ? '用紙内に収まりません' : '100ページの上限です'}</li>)}</ul></details>}
-    <h2>印刷プレビュー</h2><div className="print-page-list">{result.layout?.pages.map(p => <button key={p.index} aria-pressed={pageIndex === p.index} onClick={() => setPage(p.index)}>Page {p.index + 1}</button>)}</div>
+    })}<p>合計: {selectedItems.reduce((n, i) => n + i.printQuantity, 0)}枚 · {printProfile.paperSize} · Grid: {printProfile.map.cellSizeMm} mm</p>
+      <p>必要用紙: {result.value?.layout?.pages.length ?? 0}枚 · 未配置: {result.value?.layout?.unplacedPieces.length ?? 0}枚</p></div>
+    {Boolean(result.value?.layout?.unplacedPieces.length) && <details open><summary>未配置ピース（縮小せず出力を停止しています）</summary>
+      <ul>{result.value!.layout.unplacedPieces.map(p => <li key={p.instanceId}>{p.name}: 余白・ラベル込み {p.widthMm.toFixed(2)} × {p.heightMm.toFixed(2)} mm — {p.reason === 'oversized' ? '用紙内に収まりません' : '100ページの上限です'}</li>)}</ul></details>}
+    <h2>印刷プレビュー</h2><div className="print-page-list">{result.value?.layout?.pages.map(p => <button key={p.index} aria-pressed={pageIndex === p.index} onClick={() => setPage(p.index)}>Page {p.index + 1}</button>)}</div>
     <section className="publish-guide-preview"><iframe title="ピース印刷シート" sandbox="" referrerPolicy="no-referrer" srcDoc={output.preview} /></section>
   </section></div>;
 }
