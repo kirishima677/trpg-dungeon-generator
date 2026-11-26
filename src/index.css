@@ -14,3 +14,14 @@ html, body, #root {
 button {
   font-family: inherit;
 }
+
+.window-load-message {
+  padding: 24px;
+  line-height: 1.7;
+}
+
+.window-load-message button {
+  margin-top: 12px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
