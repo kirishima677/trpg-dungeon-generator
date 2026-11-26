@@ -9,6 +9,10 @@
 .publishing button { padding: 8px 12px; background: #2563eb; border: 0; border-radius: 6px; color: white; cursor: pointer; font: inherit; }
 .publishing button:disabled { background: #94a3b8; cursor: default; }
 .publish-actions { display: flex; gap: 8px; margin-top: 16px; }
+.publish-actions { flex-wrap: wrap; }
+.publish-print-preview { min-width: 0; }
+.print-page-list { display: flex; flex-wrap: wrap; gap: 5px; max-height: 130px; overflow: auto; }
+.print-page-list button[aria-pressed=false] { background: #dbeafe; color: #1e40af; }
 .publish-help { color: #475569; font-size: 12px; }
 .publish-warning { background: #fef3c7; padding: 10px; border-radius: 6px; }
 .publish-error { color: #b91c1c; overflow-wrap: anywhere; }
