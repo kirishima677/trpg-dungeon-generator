@@ -4,7 +4,7 @@ import { printAreas, svgToMm } from './printLayout';
 import type { PrintProfile } from './printProfile';
 import { MAX_PRINT_DOCUMENT_BYTES } from './printProfile';
 
-const escapeHtml = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+export const escapeHtml = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 const number = (n: number) => Number(n.toFixed(8));
 const mm = (n: number) => `${number(n)}mm`;
 export function printDocumentStyles(profile: PrintProfile) {
@@ -60,9 +60,12 @@ function renderPage(page: PrintPage, layout: PrintLayout, profile: PrintProfile,
   const b = page.contentBoundsMm, s = page.sourceBounds, battle = profile.target === 'battle-map';
   const label = profile.showPageLabels ? `<p class="print-page-label"><span>${escapeHtml(title)}</span><span>${audience === 'gm' ? 'GM' : 'PLAYER'} MAP — ${page.label} — ${page.index + 1} / ${layout.pages.length}${battle ? ` — Grid: ${profile.map.cellSizeMm} mm` : ''}</span></p>` : '';
   const marks = battle && profile.map.showCutMarks ? `<svg class="print-cut-marks" xmlns="http://www.w3.org/2000/svg" width="${mm(layout.printableWidthMm)}" height="${mm(layout.printableHeightMm)}" viewBox="0 0 ${layout.printableWidthMm} ${layout.printableHeightMm}" fill="none" stroke="black" stroke-width="0.15">${cutMarkSegments(page, layout).map(l => `<line x1="${number(l.x1)}" y1="${number(l.y1)}" x2="${number(l.x2)}" y2="${number(l.y2)}"/>`).join('')}</svg>` : '';
-  const scale = battle && profile.map.showScaleBar ? `<div class="print-scale"><svg xmlns="http://www.w3.org/2000/svg" width="${mm(layout.cellSizeMm)}" height="3mm" viewBox="0 0 ${layout.cellSizeMm} 3"><path d="M 0 0 V 3 M 0 1.5 H ${layout.cellSizeMm} M ${layout.cellSizeMm} 0 V 3" fill="none" stroke="black" stroke-width="0.2"/></svg><span>1マス = ${layout.cellSizeMm} mm</span></div>` : '';
+  const scale = battle ? renderPrintScale(profile) : '';
   return `<section class="print-sheet" aria-label="Page ${page.label}"><div class="print-page">${label}
 <svg class="print-map" xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="${mm(b.width)}" height="${mm(b.height)}" viewBox="${s.x} ${s.y} ${s.width} ${s.height}" style="left:${mm(b.x)};top:${mm(b.y)}" preserveAspectRatio="xMinYMin meet" overflow="hidden"><use href="#print-map-art"/></svg>${marks}${scale}</div></section>`;
+}
+export function renderPrintScale(profile: PrintProfile) {
+  return profile.map.showScaleBar ? `<div class="print-scale"><svg xmlns="http://www.w3.org/2000/svg" width="${mm(profile.map.cellSizeMm)}" height="3mm" viewBox="0 0 ${profile.map.cellSizeMm} 3"><path d="M 0 0 V 3 M 0 1.5 H ${profile.map.cellSizeMm} M ${profile.map.cellSizeMm} 0 V 3" fill="none" stroke="black" stroke-width="0.2"/></svg><span>1マス = ${profile.map.cellSizeMm} mm</span></div>` : '';
 }
 export function checkPrintDocumentSize(html: string) {
   if (new TextEncoder().encode(html).byteLength > MAX_PRINT_DOCUMENT_BYTES) throw new Error('印刷文書が16MiBを超えています。マップや文書の出力設定を減らしてください。');
