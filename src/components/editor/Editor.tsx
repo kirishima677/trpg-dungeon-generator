@@ -174,6 +174,9 @@ export function Editor() {
       }} onOpenMarkdown={handleOpenMarkdown} onOpenPieceEditor={() => {
         const opened = openEditorWindow('piece-editor-window', { pieceEditor: '1' }, 'popup=yes,width=1200,height=850');
         setWindowError(opened ? '' : 'ピースエディタを開けませんでした。ポップアップを許可してください。');
+      }} onOpenContentEditor={() => {
+        const opened = openEditorWindow('content-editor-window', { contentEditor: '1' }, 'popup=yes,width=1200,height=850');
+        setWindowError(opened ? '' : 'コンテンツライブラリを開けませんでした。ポップアップを許可してください。');
       }} />
       {windowError && <p role="alert">{windowError}</p>}
 
