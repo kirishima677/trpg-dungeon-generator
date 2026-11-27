@@ -6,17 +6,21 @@ import { isStandardPiece, normalizePiece, pieceStructure } from '../editor/piece
 import { DEFAULT_PIECES } from '../model/pieceLibrary';
 import { SCHEMA_VERSION, SUPPORTED_DUNGEON_SCHEMAS } from '../model/dungeonSchema';
 import { roomInformationError } from '../model/roomInformation';
+import { ENTITY_LIMITS } from '../model/entity';
+import { rejectDuplicateJsonKeys } from '../content/contentJson';
 
 export { SCHEMA_VERSION };
 export const FORMAT_ID = 'trpg-dungeon-generator' as const;
 
 export function buildExportEnvelope(dungeon: DungeonDocument): ExportEnvelope {
-  return {
+  const envelope: ExportEnvelope = {
     formatId: FORMAT_ID,
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     dungeon: { ...normalizeDungeonDocument(dungeon), version: SCHEMA_VERSION },
   };
+  if (new TextEncoder().encode(JSON.stringify(envelope, null, 2)).length > ENTITY_LIMITS.dungeonJsonBytes) throw new Error('Dungeon JSONは20 MiBまでです。');
+  return envelope;
 }
 
 export function downloadJson(data: unknown, filename: string): void {
@@ -32,6 +36,7 @@ export function downloadJson(data: unknown, filename: string): void {
 
 /** Returns the parsed envelope or throws if invalid */
 export function parseImport(raw: unknown): ExportEnvelope {
+  if (new TextEncoder().encode(JSON.stringify(raw)).length > ENTITY_LIMITS.dungeonJsonBytes) throw new Error('Dungeon JSONは20 MiBまでです。');
   if (
     typeof raw !== 'object' ||
     raw === null ||
@@ -59,7 +64,7 @@ export function parseImport(raw: unknown): ExportEnvelope {
       || !room.piece || !Array.isArray(room.piece.cells) || room.piece.cells.length === 0
       || !Array.isArray(room.piece.connectors)) throw new Error('Invalid room');
     roomIds.add(room.id);
-    if (envelope.schemaVersion === SCHEMA_VERSION) {
+    if (envelope.schemaVersion === '1.2.0' || envelope.schemaVersion === SCHEMA_VERSION) {
       const error = roomInformationError(room.information, roomNumbers);
       if (error) throw new Error(`Invalid room information: ${error}`);
       roomNumbers.add(room.information!.number.trim());
@@ -95,4 +100,12 @@ export function parseImport(raw: unknown): ExportEnvelope {
     exportedAt: envelope.exportedAt as string,
     dungeon: { ...normalizeDungeonDocument(dungeon), version: SCHEMA_VERSION },
   };
+}
+
+export function parseDungeonJson(json: string): ExportEnvelope {
+  if (new TextEncoder().encode(json).length > ENTITY_LIMITS.dungeonJsonBytes) throw new Error('Dungeon JSONは20 MiBまでです。');
+  let raw: unknown;
+  try { raw = JSON.parse(json); } catch { throw new Error('Dungeon JSONの構文が不正です。'); }
+  rejectDuplicateJsonKeys(json);
+  return parseImport(raw);
 }

@@ -65,6 +65,10 @@ test('production entry and each window exclude unrelated screens and the Markdow
     const chunk = chunks.find(chunk => Object.keys(chunk.modules).some(id => id.endsWith(`/components/${path}`)));
     assert.ok(chunk, `missing window: ${path}`);
     const modules = [...entryModules, ...modulesFrom(chunk.fileName)];
+    if (path === 'editor/Editor.tsx') {
+      assert.ok(!modules.some(id => id.endsWith('/components/entities/RoomEntityPanel.tsx')), 'Editor eagerly loads the Entity panel');
+      assert.ok(!modules.some(id => id.endsWith('/editor/markdown/markdownRender.ts')), 'Editor eagerly loads Markdown preview code');
+    }
     for (const other of roots.filter(other => other !== path)) {
       assert.ok(!modules.some(id => id.endsWith(`/components/${other}`)), `${path} eagerly loads ${other}`);
     }

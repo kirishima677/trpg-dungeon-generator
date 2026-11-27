@@ -1,3 +1,4 @@
+import type { EntityInstance } from './entity';
 // ─── Direction & Connector ───────────────────────────────────────────────────
 
 export type ConnectorDirection = 'north' | 'south' | 'east' | 'west';
@@ -97,6 +98,7 @@ export interface DungeonDocument {
   version: string;
   rooms: PlacedRoom[];
   connections: Connection[];
+  entities: EntityInstance[];
   markdown: string;
   meta: DungeonMeta;
   createdAt: string; // ISO 8601

@@ -5,6 +5,7 @@ import { JSDOM } from 'jsdom';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { publicationFixture, fixtureTimestamp } from './fixtures/publicationFixture';
+import { publicationBaselineData } from './fixtures/publicationBaselineData';
 import type { ContentRepository } from '../src/repository/contentRepository';
 import type { ContentDefinition } from '../src/model/content';
 const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/?contentEditor=1' });
@@ -175,7 +176,7 @@ test('actual editor exports current, checked, filtered and all saved contents; p
   } finally { await close(); }
 });
 
-test('a populated content library leaves all 16 GM/player publication artifacts byte-identical and out of package plans', async () => {
+test('a populated library stays out of publication artifacts, allowing only the Entity schema migration in project JSON', async () => {
   const sentinel = 'CONTENT_LIBRARY_PRIVATE_SENTINEL';
   await repository.saveMany(CONTENT_KINDS.map(kind => ({ ...fixture(kind), kind, name: sentinel, summary: sentinel,
     description: sentinel, gmNotes: sentinel, tags: [sentinel], attributes: { secret: sentinel } })), 'skip');
@@ -187,7 +188,7 @@ test('a populated content library leaves all 16 GM/player publication artifacts 
   const generator = createArtifactGenerator(source, settings, profile.title, true, undefined, fixtureTimestamp);
   for (const request of plan.artifacts.filter(r => Object.hasOwn(baseline, r.path))) {
     const artifact = await generator.generate(request);
-    assert.equal(createHash('sha256').update(artifact.data).digest('hex'), baseline[request.path], request.path);
+    assert.equal(createHash('sha256').update(publicationBaselineData(request.path, artifact.data)).digest('hex'), baseline[request.path], request.path);
     assert.ok(!new TextDecoder().decode(artifact.data).includes(sentinel));
   }
 });

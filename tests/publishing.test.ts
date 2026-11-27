@@ -246,7 +246,7 @@ test('launch snapshots are cloned, fixed, explicitly refreshed and isolated by d
   provider.capture(d); const refreshed = sent.at(-1); assert.ok(isPublishSnapshot(refreshed, 'window-a', d.id)); assert.equal(refreshed.document.rooms[0].position.x, 99);
   assert.throws(() => provider.capture({ ...d, id: 'other' })); provider.close(); assert.equal(channel.onmessage, null);
 });
-test('publishing preserves repository, store/history, Markdown and schema 1.2 JSON roundtrip', async () => {
+test('publishing preserves repository, store/history, Markdown and schema 1.3 JSON roundtrip', async () => {
   const store = useDungeonStore.getState(); store.newDungeon(); store.addRoom(room('a')); store.addRoom(room('b', 12));
   const state = useDungeonStore.getState(), source = state.dungeon;
   await dungeonRepository.save(source);
@@ -256,6 +256,6 @@ test('publishing preserves repository, store/history, Markdown and schema 1.2 JS
   assert.equal(useDungeonStore.getState().dungeon, source); assert.deepEqual(source, before);
   assert.deepEqual(useDungeonStore.getState().undoStack, undo); assert.deepEqual(useDungeonStore.getState().redoStack, redo);
   assert.deepEqual(await db.dungeons.toArray(), savedBefore); assert.deepEqual(await db.pieceLibrary.toArray(), piecesBefore);
-  const envelope = buildExportEnvelope(source); assert.equal(envelope.schemaVersion, '1.2.0');
+  const envelope = buildExportEnvelope(source); assert.equal(envelope.schemaVersion, '1.3.0');
   assert.deepEqual(parseImport(JSON.parse(JSON.stringify(envelope))).dungeon, source);
 });

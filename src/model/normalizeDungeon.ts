@@ -2,15 +2,17 @@ import type { Connection, DungeonDocument, PlacedRoomInput } from './types';
 import { normalizeConnections } from './connections';
 import { normalizeRoomInformationList } from './roomInformation';
 import { SCHEMA_VERSION } from './dungeonSchema';
+import { normalizeEntities } from './entity';
 
 type LegacyRoom = PlacedRoomInput & {
   connections?: Record<string, { roomId: string; connectorId: string }>;
 };
 
-export type DungeonDocumentInput = Omit<DungeonDocument, 'markdown' | 'connections' | 'rooms'> & {
+export type DungeonDocumentInput = Omit<DungeonDocument, 'markdown' | 'connections' | 'rooms' | 'entities'> & {
   markdown?: string;
   connections?: Connection[];
   rooms: LegacyRoom[];
+  entities?: DungeonDocument['entities'];
 };
 
 export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): DungeonDocument {
@@ -43,5 +45,6 @@ export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): Dungeon
     rooms,
     connections: normalizeConnections(rooms, dungeon.connections ?? legacyConnections),
     markdown: dungeon.markdown ?? '',
+    entities: normalizeEntities(dungeon.entities, rooms),
   };
 }

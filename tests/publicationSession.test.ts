@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { after, test } from 'node:test';
 import { JSDOM } from 'jsdom';
 import { publicationFixture, fixtureTimestamp } from './fixtures/publicationFixture';
+import { publicationBaselineData } from './fixtures/publicationBaselineData';
 import { buildPackagePlan } from '../src/publishing/package/packagePlan';
 import { buildPublishMapGeometry } from '../src/publishing/publishMapGeometry';
 import { defaultPieceSheetSelection } from '../src/publishing/pieceSheet/inventory';
@@ -16,14 +17,14 @@ const { createArtifactGenerator, packagePublishProfile } = await import('../src/
 const baseline = JSON.parse(readFileSync(new URL('./fixtures/publication-baseline.json', import.meta.url), 'utf8')) as Record<string, string>;
 after(() => dom.window.close());
 
-test('all 16 text/vector artifacts remain byte-identical to pre-refactor master abc7816', async () => {
+test('15 artifacts remain byte-identical to abc7816 and project JSON changes only to Entity schema 1.3', async () => {
   const { source, settings, profile } = publicationFixture(), plan = buildPackagePlan(profile, source);
   const generator = createArtifactGenerator(source, settings, profile.title, true, undefined, fixtureTimestamp);
   const requests = plan.artifacts.filter(r => Object.hasOwn(baseline, r.path));
   assert.equal(requests.length, 16);
   for (const request of requests) {
     const artifact = await generator.generate(request);
-    assert.equal(createHash('sha256').update(artifact.data).digest('hex'), baseline[request.path], request.path);
+    assert.equal(createHash('sha256').update(publicationBaselineData(request.path, artifact.data)).digest('hex'), baseline[request.path], request.path);
   }
 });
 test('session caches routing once per audience while paper, visual settings and quantities change', () => {

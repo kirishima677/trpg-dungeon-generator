@@ -6,6 +6,7 @@ import type { PublishProfile } from './publishProfile';
 import { validatePublishProfile } from './publishProfile';
 import type { PublishScenario, ScenarioGuideOptions } from './scenario/scenarioGuide';
 import { compareRoomNumbers, MAX_GUIDE_ROOMS, MAX_GUIDE_TEXT_CHARS, MAX_MARKDOWN_CHARS, roomAnchor, validateScenarioGuideOptions } from './scenario/scenarioGuide';
+import { buildEntityGuides } from './scenario/entityGuide';
 
 export type PublishRoom = Omit<PlacedRoom, 'information'> & { label: { number: string; name: string } };
 export interface PublishDocument {
@@ -31,6 +32,7 @@ export function buildScenarioPublishDocument(source: DungeonDocument, profile: P
     if (total > MAX_GUIDE_TEXT_CHARS) throw new Error(`ガイド全体のテキストは${MAX_GUIDE_TEXT_CHARS.toLocaleString()}文字までです。`);
     return value;
   };
+  const entities = buildEntityGuides(source, gm, options, text);
   const ids = new Set<string>(), anchors = new Set<string>();
   // Sort IDs first so the rare hash-collision suffix is stable across input order.
   const indexed = source.rooms.map((room, index) => ({ room, index })).sort((a, b) => a.room.id < b.room.id ? -1 : a.room.id > b.room.id ? 1 : 0);
@@ -42,6 +44,7 @@ export function buildScenarioPublishDocument(source: DungeonDocument, profile: P
     anchors.add(anchorId);
     const info = room.information;
     return { anchorId, mapRoomId: `room-${index}`, number: text(info.number),
+      ...entities.get(room.id),
       ...(profile.showRoomNames && info.name.trim() ? { name: text(info.name.trim()) } : {}),
       ...(options.includeRoomDescriptions && info.description.trim() ? { description: text(info.description) } : {}),
       ...(gm && options.includeGmNotes && info.gmNotes.trim() ? { gmNotes: text(info.gmNotes) } : {}),

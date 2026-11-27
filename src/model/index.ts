@@ -17,3 +17,4 @@ export type {
   DungeonMeta,
   ExportEnvelope,
 } from './types';
+export type { EntityInstance, EntityVisibility, EntityEdits } from './entity';

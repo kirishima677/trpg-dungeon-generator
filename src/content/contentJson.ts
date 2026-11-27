@@ -20,7 +20,7 @@ export function buildContentExport(contents: ContentDefinition[], single = false
   return envelope;
 }
 /** JSON.parse silently keeps the last duplicate key. Reject duplicates, including escaped keys, before accepting data. */
-function rejectDuplicateKeys(json: string) {
+export function rejectDuplicateJsonKeys(json: string) {
   const stack: { keys: Set<string> | null; key: boolean }[] = [];
   for (const [token] of json.matchAll(/"(?:\\.|[^"\\])*"|[{}[\],:]|[^{}[\],:\s]+/g)) {
     const top = stack.at(-1);
@@ -39,7 +39,7 @@ export function parseContentJson(json: string): ContentDefinition[] {
   if (new TextEncoder().encode(json).length > CONTENT_LIMITS.importBytes) throw new Error('Importファイルは10 MiBまでです。');
   let value: unknown;
   try { value = JSON.parse(json); } catch { throw new Error('JSON構文が不正です。'); }
-  rejectDuplicateKeys(json);
+  rejectDuplicateJsonKeys(json);
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('コンテンツJSONの形式が不正です。');
   const raw = value as Record<string, unknown>;
   if (raw.schemaVersion !== CONTENT_SCHEMA_VERSION) throw new Error('未対応のコンテンツスキーマバージョンです。');
