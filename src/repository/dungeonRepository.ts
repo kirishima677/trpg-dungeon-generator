@@ -2,6 +2,7 @@ import { db } from '../db';
 import { normalizeDungeonDocument } from '../model';
 import type { DungeonDocument } from '../model/types';
 import type { DungeonDocumentInput } from '../model/normalizeDungeon';
+import { SCHEMA_VERSION } from '../model/dungeonSchema';
 
 export const dungeonRepository = {
   async save(dungeon: DungeonDocument): Promise<void> {
@@ -12,13 +13,15 @@ export const dungeonRepository = {
     await db.transaction('rw', db.dungeons, async () => {
       const existing = await db.dungeons.get(dungeon.id);
       // Older partial editor saves did not carry entities. Preserve the stored array and validate room references.
-      const normalized = normalizeDungeonDocument({ ...dungeon, entities: dungeon.entities ?? existing?.entities ?? [] });
+      const theme = Object.hasOwn(dungeon, 'theme') || dungeon.version === SCHEMA_VERSION ? dungeon.theme : existing?.theme;
+      const normalized = normalizeDungeonDocument({ ...dungeon, entities: dungeon.entities ?? existing?.entities ?? [], theme });
       if (existing) await db.dungeons.update(normalized.id, {
         name: normalized.name,
         version: normalized.version,
         rooms: normalized.rooms,
         connections: normalized.connections,
         entities: normalized.entities,
+        theme: normalized.theme,
         meta: normalized.meta,
         updatedAt: normalized.updatedAt,
       });

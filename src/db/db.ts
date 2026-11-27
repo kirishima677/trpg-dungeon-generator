@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { DungeonDocument, Piece } from '../model/types';
 import type { ContentDefinition } from '../model/content';
+import type { DungeonTheme } from '../model/dungeonTheme';
 
 export interface AppSettings {
   key: string;
@@ -12,6 +13,7 @@ export class DungeonDB extends Dexie {
   pieceLibrary!: Table<Piece, string>;
   settings!: Table<AppSettings, string>;
   contentDefinitions!: Table<ContentDefinition, string>;
+  dungeonThemes!: Table<DungeonTheme, string>;
 
   constructor() {
     super('TRPGDungeonDB');
@@ -21,6 +23,7 @@ export class DungeonDB extends Dexie {
       settings: 'key',
     });
     this.version(2).stores({ contentDefinitions: 'id, kind, name, updatedAt' });
+    this.version(3).stores({ dungeonThemes: 'id, name, genre, category, updatedAt' });
   }
 }
 

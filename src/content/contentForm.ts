@@ -1,30 +1,10 @@
+import { formatStringList as formatTags, parseStringList as parseTags } from '../utils/stringList';
 import { contentAttributes, normalizeContentDraft } from '../model/content';
 import type { ContentDraft } from '../model/content';
 
 export type AttributeType = 'string' | 'number' | 'boolean';
 export interface AttributeRow { key: string; type: AttributeType; value: string }
 export interface ContentForm { content: ContentDraft; tagsText: string; rows: AttributeRow[] }
-function formatTags(tags: string[]): string {
-  return tags.map(tag => /[,、\r\n"]/.test(tag) ? `"${tag.replaceAll('"', '""')}"` : tag).join(', ');
-}
-/** Quoted tags keep commas/newlines from imported libraries intact during editing. */
-function parseTags(text: string): string[] {
-  const tags: string[] = []; let value = '', quoted = false, closed = false;
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    if (quoted) {
-      if (char === '"') {
-        if (text[i + 1] === '"') { value += '"'; i++; }
-        else { quoted = false; closed = true; }
-      } else value += char;
-    } else if (/[,、\r\n]/.test(char)) { tags.push(value); value = ''; closed = false; }
-    else if (closed) { if (char.trim()) throw new Error('タグの引用符の後はカンマで区切ってください。'); }
-    else if (char === '"' && !value.trim()) { value = ''; quoted = true; }
-    else value += char;
-  }
-  if (quoted) throw new Error('タグの引用符を閉じてください。');
-  tags.push(value); return tags;
-}
 export function toContentForm(content: ContentDraft): ContentForm {
   return { content: structuredClone(content), tagsText: formatTags(content.tags),
     rows: Object.entries(content.attributes).map(([key, value]) => ({ key, type: typeof value as AttributeType, value: String(value) })) };

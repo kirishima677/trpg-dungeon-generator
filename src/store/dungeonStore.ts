@@ -11,6 +11,8 @@ import { nextRoomNumber, normalizeRoomInformation, roomInformationError } from '
 import type { RoomLabelVisibility } from '../editor/rooms/roomLabel';
 import { applyEntityCommand } from '../model/entity';
 import type { EntityCommand } from '../model/entity';
+import { createThemeAssignment } from '../model/dungeonTheme';
+import type { DungeonTheme } from '../model/dungeonTheme';
 
 const MAX_HISTORY = 50;
 
@@ -48,6 +50,7 @@ export interface DungeonStore {
   setDungeon: (dungeon: DungeonDocumentInput) => void;
   newDungeon: () => void;
   changeEntities: (command: EntityCommand) => string | null;
+  assignTheme: (theme: DungeonTheme | null) => string | null;
 
   // ── Room actions ──────────────────────────────────────────────────────────
   addRoom: (room: PlacedRoomInput) => void;
@@ -179,6 +182,18 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
         undoStack: [...undoStack.slice(-MAX_HISTORY + 1), snapshot(dungeon)], redoStack: [] });
       return null;
     } catch (e) { return e instanceof Error ? e.message : 'Entityを変更できませんでした。'; }
+  },
+
+  assignTheme(value) {
+    const { dungeon, undoStack } = get();
+    try {
+      const theme = value ? createThemeAssignment(value) : undefined;
+      if (JSON.stringify(theme) === JSON.stringify(dungeon.theme)) return null;
+      const { theme: _previous, ...base } = dungeon;
+      set({ dungeon: touch({ ...base, ...(theme ? { theme } : {}) }),
+        undoStack: [...undoStack.slice(-MAX_HISTORY + 1), snapshot(dungeon)], redoStack: [] });
+      return null;
+    } catch (e) { return e instanceof Error ? e.message : 'テーマを適用できませんでした。'; }
   },
 
   // ── Internal helper: push to undo & update ────────────────────────────────
