@@ -7,6 +7,7 @@ export const SELECTION_MODES = ['all', 'filtered', 'explicit', 'none'] as const;
 export type SelectionMode = typeof SELECTION_MODES[number];
 export interface TagSelectionCriteria { allOf: string[]; anyOf: string[]; noneOf: string[] }
 export interface PieceSelectionPolicy { mode: SelectionMode; includePieceIds: string[]; excludePieceIds: string[]; tags: TagSelectionCriteria }
+export interface RoomThemeSelectionPolicy { mode: SelectionMode; includeRoomThemeIds: string[]; excludeRoomThemeIds: string[]; tags: TagSelectionCriteria }
 export interface ContentKindSelection { mode: SelectionMode; includeContentIds: string[]; excludeContentIds: string[]; tags: TagSelectionCriteria }
 export type ContentSelectionPolicy = Record<ContentKind, ContentKindSelection>;
 export const SELECTION_LIMITS = { ids: 100, idLength: 128, tags: 50, tagLength: 64 } as const;
@@ -28,6 +29,13 @@ function common(value: unknown) {
 export function normalizePieceSelection(value: unknown): PieceSelectionPolicy {
   const { raw, mode, tags } = common(value);
   return { mode, includePieceIds: selectionList(raw.includePieceIds, '明示Piece ID', true), excludePieceIds: selectionList(raw.excludePieceIds, '除外Piece ID', true), tags };
+}
+export function normalizeRoomThemeSelection(value: unknown): RoomThemeSelectionPolicy {
+  const { raw, mode, tags } = common(value);
+  return { mode, includeRoomThemeIds: selectionList(raw.includeRoomThemeIds, '明示Room Theme ID', true), excludeRoomThemeIds: selectionList(raw.excludeRoomThemeIds, '除外Room Theme ID', true), tags };
+}
+export function emptyRoomThemeSelection(mode: SelectionMode = 'none'): RoomThemeSelectionPolicy {
+  return { mode, includeRoomThemeIds: [], excludeRoomThemeIds: [], tags: { allOf: [], anyOf: [], noneOf: [] } };
 }
 export function normalizeKindSelection(value: unknown): ContentKindSelection {
   const { raw, mode, tags } = common(value);
@@ -80,6 +88,9 @@ function resolve<T extends { id: string; tags?: string[]; kind?: ContentKind }>(
 }
 export function resolvePieceSelection(value: PieceSelectionPolicy, pieces: readonly Piece[]): SelectionResult<Piece> {
   const p = normalizePieceSelection(value); return resolve(p.mode, p.includePieceIds, p.excludePieceIds, p.tags, pieces);
+}
+export function resolveRoomThemeSelection<T extends { id: string; tags: string[] }>(value: RoomThemeSelectionPolicy, themes: readonly T[]): SelectionResult<T> {
+  const p = normalizeRoomThemeSelection(value); return resolve(p.mode, p.includeRoomThemeIds, p.excludeRoomThemeIds, p.tags, themes);
 }
 export function resolveContentSelection(value: ContentSelectionPolicy, contents: readonly ContentDefinition[]) {
   const policies = normalizeContentSelection(value), warnings: SelectionWarning[] = [];

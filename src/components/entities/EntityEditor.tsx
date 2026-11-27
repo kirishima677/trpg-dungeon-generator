@@ -26,6 +26,7 @@ export function EntityEditor({ entity, apply, onDirtyChange }: { entity: EntityI
   useEffect(() => { onDirtyChange(dirty); return () => onDirtyChange(false); }, [dirty, onDirtyChange]);
   return <section aria-label="Entityの編集">
     <p>Entity ID: {entity.id}</p><p>元の素材: {entity.contentSnapshot.name} / {CONTENT_LABELS[entity.contentSnapshot.kind]}</p>
+    {entity.origin&&<p>Room Theme由来: {entity.origin.sourceRoomThemeId} / 必須項目: {entity.origin.requiredEntryId}</p>}
     <label>個別名称<input aria-label="Entity個別名称" maxLength={ENTITY_LIMITS.name} value={draft.customName} placeholder={entity.contentSnapshot.name}
       onChange={e => setDraft({ ...draft, customName: e.target.value })} /></label>
     <label>数量<input aria-label="Entity数量" inputMode="numeric" maxLength={12} value={quantity} onChange={e => setQuantity(e.target.value)} /></label>

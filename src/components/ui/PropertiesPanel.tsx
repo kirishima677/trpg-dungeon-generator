@@ -7,9 +7,11 @@ import { roomDisplayLabel } from '../../model/roomInformation';
 import './entities.css';
 
 const RoomEntityPanel = lazy(() => import('../entities/RoomEntityPanel').then(m => ({ default: m.RoomEntityPanel })));
+const RoomThemePanel = lazy(() => import('../themes/RoomThemePanel').then(m => ({ default: m.RoomThemePanel })));
 
 export function PropertiesPanel() {
-  const [tab, setTab] = useState<'basic' | 'entity'>('basic');
+  const [tab, setTab] = useState<'basic' | 'entity' | 'theme'>('basic');
+  const [openedThemes, setOpenedThemes] = useState(false),[duplicateError,setDuplicateError] = useState('');
   const [openedEntities, setOpenedEntities] = useState(false);
   const { dungeon, selectedRoomId, rotateRoom, deleteRoom, selectedConnectionId, deleteConnection, selectConnection } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
@@ -81,6 +83,7 @@ export function PropertiesPanel() {
       <nav aria-label="部屋プロパティの種類" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         <button aria-pressed={tab === 'basic'} onClick={() => setTab('basic')}>基本情報</button>
         <button aria-pressed={tab === 'entity'} onClick={() => { setTab('entity'); setOpenedEntities(true); }}>Entity</button>
+        <button aria-pressed={tab === 'theme'} onClick={() => { setTab('theme');setOpenedThemes(true); }}>Room Theme</button>
       </nav>
       <div hidden={tab !== 'basic'}>
       <RoomInformationForm key={room.id} room={room} />
@@ -121,6 +124,7 @@ export function PropertiesPanel() {
       ))}
 
       <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
+        <button onClick={() => setDuplicateError(useDungeonStore.getState().duplicateRoom(room.id)??'')} style={actionBtn}>部屋を複製</button>
         <button onClick={() => rotateRoom(room.id)} style={actionBtn}>
           🔄 回転
         </button>
@@ -131,8 +135,10 @@ export function PropertiesPanel() {
           🗑 削除
         </button>
       </div>
+      {duplicateError&&<p role="alert">{duplicateError}</p>}
       </div>
       {openedEntities && <div hidden={tab !== 'entity'}><Suspense fallback={<p>Entityを準備しています…</p>}><RoomEntityPanel key={room.id} roomId={room.id} /></Suspense></div>}
+      {openedThemes && <div hidden={tab !== 'theme'}><Suspense fallback={<p>Room Themeを準備しています…</p>}><RoomThemePanel key={room.id} roomId={room.id} /></Suspense></div>}
     </div>
   );
 }

@@ -126,3 +126,5 @@ export function useLibraryEditor<D extends { id: string }, T extends D & Stamp, 
     }),
   };
 }
+
+export type LibraryEditorState<D extends { id: string }, T extends D & Stamp, F> = ReturnType<typeof useLibraryEditor<D,T,F>>;

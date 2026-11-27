@@ -1,5 +1,7 @@
 # Dungeon Theme管理
 
+Room Theme候補・DB v4・Dungeon JSON 1.5.0への追加変更は [Room Theme管理](room-themes.md) を参照。以下はDungeon Theme初回実装時点の記録。
+
 ## 目的と範囲
 
 ダンジョンの世界観・施設分類・Markdownによる制作知識と、既存Piece / Content Libraryから素材を選ぶ方針を再利用できるようにした。テーマは手動編集を制約しない。部屋配置・接続・Entity・Markdown・出版設定の自動生成や置換は行わない。

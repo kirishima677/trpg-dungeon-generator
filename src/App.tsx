@@ -7,6 +7,7 @@ const PieceEditorWindow = lazy(() => import('./components/pieceEditor/PieceEdito
 const PublishingWindow = lazy(() => import('./components/publishing/PublishingWindow').then(m => ({ default: m.PublishingWindow })));
 const ContentEditorWindow = lazy(() => import('./components/content/ContentEditorWindow').then(m => ({ default: m.ContentEditorWindow })));
 const ThemeEditorWindow = lazy(() => import('./components/themes/ThemeEditorWindow').then(m => ({ default: m.ThemeEditorWindow })));
+const RoomThemeEditorWindow = lazy(() => import('./components/themes/RoomThemeEditorWindow').then(m => ({ default: m.RoomThemeEditorWindow })));
 
 function App() {
   const params = new URLSearchParams(window.location.search);
@@ -15,6 +16,7 @@ function App() {
   if (params.get('markdownEditor') === '1') return <WindowLoader name="Markdownエディタ"><MarkdownEditorWindow /></WindowLoader>;
   if (params.get('contentEditor') === '1') return <WindowLoader name="コンテンツライブラリ"><ContentEditorWindow /></WindowLoader>;
   if (params.get('themeEditor') === '1') return <WindowLoader name="テーマ管理"><ThemeEditorWindow /></WindowLoader>;
+  if (params.get('roomThemeEditor') === '1') return <WindowLoader name="Room Theme管理"><RoomThemeEditorWindow /></WindowLoader>;
   return <WindowLoader name="ダンジョンエディタ"><Editor /></WindowLoader>;
 }
 

@@ -4,15 +4,19 @@ import { normalizeDungeonDocument } from '../model';
 import type { DungeonDocumentInput } from '../model/normalizeDungeon';
 import type { Connection, ConnectionType, ConnectorEndpoint, DungeonDocument, PlacedRoom, PlacedRoomInput, Piece, Rotation, RoomInformation } from '../model/types';
 import { canConnect, endpointExists, usesEndpoint } from '../model/connections';
-import { getWorldCells } from '../utils/geometry';
+import { getWorldCells, pieceBounds } from '../utils/geometry';
 import { SCHEMA_VERSION } from '../utils/exportImport';
 import { pieceReferencesFrozen } from '../editor/pieces/pieceReferences';
 import { nextRoomNumber, normalizeRoomInformation, roomInformationError } from '../model/roomInformation';
 import type { RoomLabelVisibility } from '../editor/rooms/roomLabel';
-import { applyEntityCommand } from '../model/entity';
+import { applyEntityCommand, checkEntityLimits } from '../model/entity';
 import type { EntityCommand } from '../model/entity';
 import { createThemeAssignment } from '../model/dungeonTheme';
 import type { DungeonTheme } from '../model/dungeonTheme';
+import { createRoomThemeAssignment } from '../model/roomTheme';
+import type { RoomTheme } from '../model/roomTheme';
+import type { ContentDefinition } from '../model/content';
+import { prepareRequiredPlacement, requiredPlacementRevision } from '../model/roomThemePlacement';
 
 const MAX_HISTORY = 50;
 
@@ -51,6 +55,9 @@ export interface DungeonStore {
   newDungeon: () => void;
   changeEntities: (command: EntityCommand) => string | null;
   assignTheme: (theme: DungeonTheme | null) => string | null;
+  assignRoomTheme: (roomId: string, theme: RoomTheme | null) => string | null;
+  placeRequiredContents: (roomId: string, contents: readonly ContentDefinition[], pieces: readonly Piece[], reviewedRevision: string, allowConflicts?: boolean) => string | null;
+  duplicateRoom: (roomId: string) => string | null;
 
   // ── Room actions ──────────────────────────────────────────────────────────
   addRoom: (room: PlacedRoomInput) => void;
@@ -194,6 +201,56 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
         undoStack: [...undoStack.slice(-MAX_HISTORY + 1), snapshot(dungeon)], redoStack: [] });
       return null;
     } catch (e) { return e instanceof Error ? e.message : 'テーマを適用できませんでした。'; }
+  },
+
+  assignRoomTheme(roomId, value) {
+    const { dungeon, undoStack } = get();
+    try {
+      const room = dungeon.rooms.find(r => r.id === roomId);
+      if (!room) throw new Error('部屋が見つかりません。');
+      const roomTheme = value ? createRoomThemeAssignment(value) : undefined;
+      if (JSON.stringify(roomTheme) === JSON.stringify(room.roomTheme)) return null;
+      const { roomTheme: _previous, ...base } = room;
+      set({ dungeon: touch({ ...dungeon, rooms: dungeon.rooms.map(r => r.id === roomId ? { ...base, ...(roomTheme ? { roomTheme } : {}) } : r) }),
+        undoStack: [...undoStack.slice(-MAX_HISTORY + 1),snapshot(dungeon)],redoStack:[] });
+      return null;
+    } catch(e) { return e instanceof Error ? e.message : 'Room Themeを適用できませんでした。'; }
+  },
+
+  placeRequiredContents(roomId, contents, pieces, reviewedRevision, allowConflicts = false) {
+    const { dungeon, undoStack } = get();
+    try {
+      if (requiredPlacementRevision(dungeon,roomId,contents,pieces) !== reviewedRevision) throw new Error('配置予定が変わりました。プレビューを確認し直してください。');
+      const plan = prepareRequiredPlacement(dungeon,roomId,contents,pieces);
+      if (plan.blockers.length) throw new Error(plan.blockers.join(' '));
+      if (!plan.added.length) return null;
+      if (plan.conflicts.length && !allowConflicts) throw new Error('素材選択条件との競合を確認して続行してください。');
+      set({ dungeon:touch({ ...dungeon,entities:[...dungeon.entities,...plan.added] }),
+        undoStack:[...undoStack.slice(-MAX_HISTORY + 1),snapshot(dungeon)],redoStack:[] });
+      return null;
+    } catch(e) { return e instanceof Error ? e.message : '必須Contentを配置できませんでした。'; }
+  },
+
+  duplicateRoom(roomId) {
+    if (pieceReferencesFrozen()) return 'ピース参照の確認中です。もう一度操作してください。';
+    const { dungeon,undoStack } = get(), source = dungeon.rooms.find(r => r.id === roomId);
+    if (!source) return '部屋が見つかりません。';
+    try {
+      const room = structuredClone(source); room.id = uuid();
+      room.information.number = nextRoomNumber(dungeon.rooms.map(r => r.information.number));
+      const { w,h } = pieceBounds(room.piece,room.rotation);
+      let found = false;
+      for (let i = 1;i <= 512;i++) {
+        room.position = { x:source.position.x + (i % 16) * (w + 1),y:source.position.y + Math.floor(i / 16) * (h + 1) };
+        if (!hasCollision(room,dungeon.rooms)) { found = true; break; }
+      }
+      if (!found) throw new Error('複製先の空き領域が見つかりません。');
+      const entities = [...dungeon.entities,...dungeon.entities.filter(e => e.roomId === roomId).map(e => ({ ...structuredClone(e),id:uuid(),roomId:room.id }))];
+      checkEntityLimits(entities);
+      set({ dungeon:touch({ ...dungeon,rooms:[...dungeon.rooms,room],entities }),selectedRoomId:room.id,selectedConnectionId:null,pendingConnector:null,
+        undoStack:[...undoStack.slice(-MAX_HISTORY + 1),snapshot(dungeon)],redoStack:[] });
+      return null;
+    } catch(e) { return e instanceof Error ? e.message : '部屋を複製できませんでした。'; }
   },
 
   // ── Internal helper: push to undo & update ────────────────────────────────

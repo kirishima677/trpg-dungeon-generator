@@ -77,13 +77,13 @@ test('applied snapshots remain independent through library updates/deletion and 
   await dungeonRepository.save(state().dungeon);assert.deepEqual((await dungeonRepository.load(state().dungeon.id))!.theme,state().dungeon.theme);
 });
 test('schema 1.4 project restores a Theme snapshot with no Library and does not auto-register any weak references', async()=> {
-  const source={...entityDungeon(),theme:createThemeAssignment(themeFixture())}, data=buildExportEnvelope(source);assert.equal(data.schemaVersion,'1.4.0');
+  const source={...entityDungeon(),theme:createThemeAssignment(themeFixture())}, data=buildExportEnvelope(source);assert.equal(data.schemaVersion,'1.5.0');
   const parsed=parseDungeonJson(JSON.stringify(data)).dungeon;assert.deepEqual(parsed.theme,source.theme);
   await pieceRepository.registerDungeonPieces(parsed);await dungeonRepository.save(parsed);assert.deepEqual((await dungeonRepository.load(parsed.id))!.theme,source.theme);
   assert.equal(await db.dungeonThemes.count(),0);assert.equal(await db.contentDefinitions.count(),0);
 });
 test('legacy projects 1.0–1.3 remain theme-optional; null/undefined canonicalize to an absent key and invalid snapshots reject',()=> {
-  for(const version of ['1.0.0','1.1.0','1.2.0','1.3.0']){const d=parseImport({formatId:'trpg-dungeon-generator',schemaVersion:version,dungeon:{...entityDungeon(),version}}).dungeon;assert.equal(Object.hasOwn(d,'theme'),false);assert.equal(d.version,'1.4.0');}
+  for(const version of ['1.0.0','1.1.0','1.2.0','1.3.0']){const d=parseImport({formatId:'trpg-dungeon-generator',schemaVersion:version,dungeon:{...entityDungeon(),version}}).dungeon;assert.equal(Object.hasOwn(d,'theme'),false);assert.equal(d.version,'1.5.0');}
   for(const theme of [null,undefined])assert.equal(Object.hasOwn(normalizeDungeonDocument({...entityDungeon(),theme} as never),'theme'),false);
   for(const theme of [{},{sourceThemeId:'wrong',themeSnapshot:themeFixture()},{sourceThemeId:themeFixture().id,themeSnapshot:{...themeFixture(),createdAt:'bad'}}])assert.throws(()=>parseImport({...buildExportEnvelope(entityDungeon()),dungeon:{...entityDungeon(),theme}}));
 });

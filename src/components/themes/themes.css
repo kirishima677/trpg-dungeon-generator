@@ -17,3 +17,12 @@
 .theme-modal ul, .theme-editor ul { padding-left:22px; }
 .theme-policy { max-height:240px; overflow:auto; background:#f8fafc; padding:12px; }
 .theme-modal fieldset { border:0; padding:0; min-width:0; }
+.room-constraints { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.room-theme-counts { border-collapse:collapse; margin:12px 0; }
+.room-theme-counts th, .room-theme-counts td { border:1px solid #cbd5e1; padding:6px 12px; text-align:left; }
+.room-theme-panel p { overflow-wrap:anywhere; line-height:1.6; margin:8px 0; }
+.room-theme-panel button, .room-theme-panel input, .room-theme-panel select { max-width:100%; padding:5px; margin:4px 0; }
+.room-theme-panel fieldset { border:0; padding:0; min-width:0; }
+.room-theme-panel .theme-markdown { padding:10px; background:white; max-height:250px; overflow:auto; }
+.room-theme-panel [role=alert] { color:#b91c1c; }
+.theme-editor .theme-candidates > button { display:block; width:100%; text-align:left; margin:6px 0; }
