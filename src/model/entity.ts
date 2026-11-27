@@ -3,9 +3,11 @@ import { normalizeContent } from './content';
 import type { ContentDefinition } from './content';
 
 export type EntityVisibility = 'gm-only' | 'public';
+export interface RoomThemeEntityOrigin { type: 'room-theme-required'; sourceRoomThemeId: string; requiredEntryId: string }
 export interface EntityInstance {
   id: string; roomId: string; sourceContentId: string; contentSnapshot: ContentDefinition;
   quantity: number; customName: string; publicDescription: string; gmNotes: string; visibility: EntityVisibility;
+  origin?: RoomThemeEntityOrigin;
 }
 export type EntityEdits = Pick<EntityInstance, 'quantity' | 'customName' | 'publicDescription' | 'gmNotes' | 'visibility'>;
 export const ENTITY_LIMITS = { perRoom: 50, total: 500, quantity: 1_000_000, name: 200, markdown: 20_000,
@@ -19,7 +21,7 @@ function snapshot(value: unknown): ContentDefinition {
   if (new TextEncoder().encode(JSON.stringify(content)).length > ENTITY_LIMITS.snapshotBytes) throw new Error('Content Snapshotは256 KiBまでです。');
   return content;
 }
-function edits(value: unknown): EntityEdits {
+export function normalizeEntityEdits(value: unknown): EntityEdits {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Entityの編集内容が不正です。');
   const raw = value as Record<string, unknown>;
   if (!Number.isSafeInteger(raw.quantity) || (raw.quantity as number) < 1 || (raw.quantity as number) > ENTITY_LIMITS.quantity) throw new Error(`数量は1〜${ENTITY_LIMITS.quantity}の整数で指定してください。`);
@@ -36,7 +38,14 @@ export function normalizeEntity(value: unknown, roomIds: ReadonlySet<string>): E
   const sourceContentId = string(raw.sourceContentId, '元のContent ID', 128, true);
   const contentSnapshot = snapshot(raw.contentSnapshot);
   if (contentSnapshot.id !== sourceContentId) throw new Error('元のContent IDとスナップショットが一致しません。');
-  return { id, roomId, sourceContentId, contentSnapshot, ...edits(raw) };
+  let origin: RoomThemeEntityOrigin | undefined;
+  if (raw.origin !== undefined) {
+    if (!raw.origin || typeof raw.origin !== 'object' || Array.isArray(raw.origin)) throw new Error('Entityの由来情報が不正です。');
+    const o = raw.origin as Record<string, unknown>;
+    if (o.type !== 'room-theme-required') throw new Error('Entityの由来種別が不正です。');
+    origin = { type: o.type, sourceRoomThemeId: string(o.sourceRoomThemeId, '由来Theme ID', 128, true), requiredEntryId: string(o.requiredEntryId, '必須構成項目ID', 128, true) };
+  }
+  return { id, roomId, sourceContentId, contentSnapshot, ...normalizeEntityEdits(raw), ...(origin ? { origin } : {}) };
 }
 export function checkEntityLimits(entities: readonly EntityInstance[]) {
   if (entities.length > ENTITY_LIMITS.total) throw new Error(`Entityはダンジョン全体で${ENTITY_LIMITS.total}件までです。`);
@@ -83,11 +92,16 @@ export function applyEntityCommand(entities: readonly EntityInstance[], rooms: r
     const entity = entities.find(e => e.id === command.id);
     if (!entity) throw new Error('Entityが見つかりません。');
     if (command.type === 'delete') result = entities.filter(e => e.id !== entity.id);
-    else if (command.type === 'duplicate') result = [...entities, normalizeEntity({ ...entity, id: uuid() }, new Set(rooms.map(r => r.id)))];
+    else if (command.type === 'duplicate') {
+      const { origin: _origin, ...base } = entity;
+      result = [...entities, normalizeEntity({ ...base, id: uuid() }, new Set(rooms.map(r => r.id)))];
+    }
     else {
       if (command.type === 'refresh' && (command.content.id !== entity.sourceContentId || command.content.kind !== entity.contentSnapshot.kind)) throw new Error('元のIDまたは種別が異なります。Entityを再登録してください。');
       if (command.type === 'move' && !rooms.some(r => r.id === command.roomId)) throw new Error('Entityの所属部屋が見つかりません。');
-      const next = { ...entity, ...(command.type === 'edit' ? edits(command.edits)
+      if (command.type === 'move' && command.roomId === entity.roomId) return null;
+      const { origin: _origin, ...moved } = entity;
+      const next = { ...(command.type === 'move' ? moved : entity), ...(command.type === 'edit' ? normalizeEntityEdits(command.edits)
         : command.type === 'move' ? { roomId: string(command.roomId, '所属部屋ID', 128, true) } : { contentSnapshot: snapshot(command.content) }) };
       if (JSON.stringify(next) === JSON.stringify(entity)) return null;
       result = entities.map(e => e.id === entity.id ? next : e);

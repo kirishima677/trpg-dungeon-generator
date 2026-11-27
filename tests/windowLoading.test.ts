@@ -51,7 +51,7 @@ test('production entry and each window exclude unrelated screens and the Markdow
   const entry = chunks.find(chunk => chunk.isEntry)!;
   assert.ok(entry);
   const roots = ['editor/Editor.tsx', 'markdown/MarkdownEditorWindow.tsx',
-    'pieceEditor/PieceEditorWindow.tsx', 'publishing/PublishingWindow.tsx', 'content/ContentEditorWindow.tsx', 'themes/ThemeEditorWindow.tsx'];
+    'pieceEditor/PieceEditorWindow.tsx', 'publishing/PublishingWindow.tsx', 'content/ContentEditorWindow.tsx', 'themes/ThemeEditorWindow.tsx', 'themes/RoomThemeEditorWindow.tsx'];
   function modulesFrom(file: string, visited = new Set<string>()): string[] {
     if (visited.has(file)) return [];
     visited.add(file);
@@ -66,6 +66,7 @@ test('production entry and each window exclude unrelated screens and the Markdow
     assert.ok(chunk, `missing window: ${path}`);
     const modules = [...entryModules, ...modulesFrom(chunk.fileName)];
     if (path === 'editor/Editor.tsx') {
+      assert.ok(!modules.some(id => id.endsWith('/components/themes/RoomThemePanel.tsx')), 'Editor eagerly loads Room Theme settings');
       assert.ok(!modules.some(id => id.endsWith('/components/themes/DungeonThemePanel.tsx')), 'Editor eagerly loads Theme settings');
       assert.ok(!modules.some(id => id.endsWith('/components/entities/RoomEntityPanel.tsx')), 'Editor eagerly loads the Entity panel');
       assert.ok(!modules.some(id => id.endsWith('/editor/markdown/markdownRender.ts')), 'Editor eagerly loads Markdown preview code');

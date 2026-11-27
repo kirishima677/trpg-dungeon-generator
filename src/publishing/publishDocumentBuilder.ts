@@ -8,7 +8,7 @@ import type { PublishScenario, ScenarioGuideOptions } from './scenario/scenarioG
 import { compareRoomNumbers, MAX_GUIDE_ROOMS, MAX_GUIDE_TEXT_CHARS, MAX_MARKDOWN_CHARS, roomAnchor, validateScenarioGuideOptions } from './scenario/scenarioGuide';
 import { buildEntityGuides } from './scenario/entityGuide';
 
-export type PublishRoom = Omit<PlacedRoom, 'information'> & { label: { number: string; name: string } };
+export type PublishRoom = Omit<PlacedRoom, 'information' | 'roomTheme'> & { label: { number: string; name: string } };
 export interface PublishDocument {
   audience: PublishAudience;
   rooms: PublishRoom[];

@@ -64,7 +64,7 @@ export function parseImport(raw: unknown): ExportEnvelope {
       || !room.piece || !Array.isArray(room.piece.cells) || room.piece.cells.length === 0
       || !Array.isArray(room.piece.connectors)) throw new Error('Invalid room');
     roomIds.add(room.id);
-    if (['1.2.0', '1.3.0', SCHEMA_VERSION].includes(envelope.schemaVersion)) {
+    if (['1.2.0', '1.3.0', '1.4.0', SCHEMA_VERSION].includes(envelope.schemaVersion)) {
       const error = roomInformationError(room.information, roomNumbers);
       if (error) throw new Error(`Invalid room information: ${error}`);
       roomNumbers.add(room.information!.number.trim());

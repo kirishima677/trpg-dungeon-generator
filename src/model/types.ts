@@ -1,5 +1,6 @@
 import type { EntityInstance } from './entity';
 import type { DungeonThemeAssignment } from './dungeonTheme';
+import type { RoomThemeAssignment } from './roomTheme';
 // ─── Direction & Connector ───────────────────────────────────────────────────
 
 export type ConnectorDirection = 'north' | 'south' | 'east' | 'west';
@@ -63,6 +64,7 @@ export interface PlacedRoom {
   position: { x: number; y: number };
   rotation: Rotation;
   information: RoomInformation;
+  roomTheme?: RoomThemeAssignment;
 }
 
 /** Compatibility boundary for old documents and newly placed pieces. */

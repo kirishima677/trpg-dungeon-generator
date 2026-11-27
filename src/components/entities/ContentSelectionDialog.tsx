@@ -4,8 +4,9 @@ import type { ContentDefinition, ContentKind } from '../../model/content';
 import { searchContents } from '../../content/contentSearch';
 import { ENTITY_LIMITS } from '../../model/entity';
 
-export function ContentSelectionDialog({ contents, busy, error, onAdd, onClose }: {
+export function ContentSelectionDialog({ contents, busy, error, onAdd, onClose, dialogLabel = '部屋へEntityを追加', description = '配置時の定義をコピーします。公開範囲の初期値はGM専用です。', confirmLabel = '部屋へ追加' }: {
   contents: ContentDefinition[]; busy: boolean; error: string; onAdd: (id: string, quantity: number) => void; onClose: () => void;
+  dialogLabel?: string; description?: string; confirmLabel?: string;
 }) {
   const [query, setQuery] = useState(''), [kind, setKind] = useState<ContentKind | ''>('');
   const [selected, setSelected] = useState(''), [quantity, setQuantity] = useState('1'), [page, setPage] = useState(0);
@@ -13,8 +14,8 @@ export function ContentSelectionDialog({ contents, busy, error, onAdd, onClose }
   const actualPage = Math.min(page, Math.max(0, Math.ceil(filtered.length / 50) - 1));
   const content = contents.find(c => c.id === selected);
   const valid = Number.isSafeInteger(Number(quantity)) && Number(quantity) >= 1 && Number(quantity) <= ENTITY_LIMITS.quantity;
-  return <div className="entity-modal"><section role="dialog" aria-modal="true" aria-label="部屋へEntityを追加">
-    <h2>コンテンツを選択</h2><p>配置時の定義をコピーします。公開範囲の初期値はGM専用です。</p>
+  return <div className="entity-modal"><section role="dialog" aria-modal="true" aria-label={dialogLabel}>
+    <h2>コンテンツを選択</h2><p>{description}</p>
     <fieldset disabled={busy}>
       <label>検索<input aria-label="Entity素材検索" value={query} onChange={e => { setQuery(e.target.value); setPage(0); }} /></label>
       <label>種別<select aria-label="Entity素材の種別" value={kind} onChange={e => { setKind(e.target.value as ContentKind | ''); setPage(0); }}>
@@ -28,7 +29,7 @@ export function ContentSelectionDialog({ contents, busy, error, onAdd, onClose }
       <p>選択中: {content?.name ?? '未選択'}</p>
       <label>数量<input aria-label="追加するEntityの数量" inputMode="numeric" maxLength={12} value={quantity} onChange={e => setQuantity(e.target.value)} /></label>
       {!valid && <p role="alert">数量は1〜{ENTITY_LIMITS.quantity}の整数で指定してください。</p>}
-      <button disabled={!content || !valid} onClick={() => onAdd(selected, Number(quantity))}>部屋へ追加</button>
+      <button disabled={!content || !valid} onClick={() => onAdd(selected, Number(quantity))}>{confirmLabel}</button>
       <button onClick={onClose}>閉じる</button>
     </fieldset>
     {error && <p role="alert">{error}</p>}

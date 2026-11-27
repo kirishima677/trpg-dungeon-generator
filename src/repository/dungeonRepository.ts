@@ -14,7 +14,10 @@ export const dungeonRepository = {
       const existing = await db.dungeons.get(dungeon.id);
       // Older partial editor saves did not carry entities. Preserve the stored array and validate room references.
       const theme = Object.hasOwn(dungeon, 'theme') || dungeon.version === SCHEMA_VERSION ? dungeon.theme : existing?.theme;
-      const normalized = normalizeDungeonDocument({ ...dungeon, entities: dungeon.entities ?? existing?.entities ?? [], theme });
+      const rooms = dungeon.version === SCHEMA_VERSION ? dungeon.rooms : dungeon.rooms.map(room => Object.hasOwn(room, 'roomTheme') ? room : {
+        ...room, roomTheme: existing?.rooms.find(r => r.id === room.id)?.roomTheme,
+      });
+      const normalized = normalizeDungeonDocument({ ...dungeon, rooms, entities: dungeon.entities ?? existing?.entities ?? [], theme });
       if (existing) await db.dungeons.update(normalized.id, {
         name: normalized.name,
         version: normalized.version,

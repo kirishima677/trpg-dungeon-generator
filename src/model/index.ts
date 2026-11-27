@@ -19,4 +19,7 @@ export type {
 } from './types';
 export type { EntityInstance, EntityVisibility, EntityEdits } from './entity';
 export type { DungeonTheme, DungeonThemeDraft, DungeonThemeAssignment } from './dungeonTheme';
+export type { RoomTheme, RoomThemeDraft, RoomThemeAssignment, RequiredContentEntry, RoomPieceConstraints } from './roomTheme';
+export type { RoomThemeSelectionPolicy } from './themeSelection';
+export type { RoomThemeEntityOrigin } from './entity';
 export type { SelectionMode, TagSelectionCriteria, PieceSelectionPolicy, ContentKindSelection, ContentSelectionPolicy, SelectionResult, SelectionWarning } from './themeSelection';

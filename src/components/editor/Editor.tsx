@@ -92,7 +92,7 @@ export function Editor() {
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (themeOpen) return;
+      if (themeOpen || document.querySelector('[aria-modal="true"]')) return;
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
         || (document.activeElement as HTMLElement | null)?.isContentEditable) return;
@@ -186,6 +186,9 @@ export function Editor() {
         setWindowError(opened ? '' : 'テーマ管理を開けませんでした。ポップアップを許可してください。');
       }} onOpenThemeSettings={() => {
         cancelConnection(); setThemeOpen(true);
+      }} onOpenRoomThemeEditor={() => {
+        const opened = openEditorWindow('room-theme-editor-window', { roomThemeEditor:'1' },'popup=yes,width=1200,height=850');
+        setWindowError(opened ? '' : 'Room Theme管理を開けませんでした。ポップアップを許可してください。');
       }} />
       {windowError && <p role="alert">{windowError}</p>}
 

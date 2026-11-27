@@ -4,6 +4,7 @@ import { normalizeRoomInformationList } from './roomInformation';
 import { SCHEMA_VERSION } from './dungeonSchema';
 import { normalizeEntities } from './entity';
 import { normalizeThemeAssignment } from './dungeonTheme';
+import { normalizeRoomThemeAssignment } from './roomTheme';
 
 type LegacyRoom = PlacedRoomInput & {
   connections?: Record<string, { roomId: string; connectorId: string }>;
@@ -37,8 +38,9 @@ export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): Dungeon
     }
   }
   const rooms = normalizeRoomInformationList(dungeon.rooms.map(room => {
-    const { connections: _legacy, ...placedRoom } = room;
-    return placedRoom;
+    const { connections: _legacy, roomTheme: rawTheme, ...placedRoom } = room;
+    const roomTheme = normalizeRoomThemeAssignment(rawTheme);
+    return { ...placedRoom, ...(roomTheme ? { roomTheme } : {}) };
   }));
   const { theme: rawTheme, ...base } = dungeon;
   const theme = normalizeThemeAssignment(rawTheme);

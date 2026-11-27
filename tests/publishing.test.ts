@@ -256,6 +256,6 @@ test('publishing preserves repository, store/history, Markdown and schema 1.3 JS
   assert.equal(useDungeonStore.getState().dungeon, source); assert.deepEqual(source, before);
   assert.deepEqual(useDungeonStore.getState().undoStack, undo); assert.deepEqual(useDungeonStore.getState().redoStack, redo);
   assert.deepEqual(await db.dungeons.toArray(), savedBefore); assert.deepEqual(await db.pieceLibrary.toArray(), piecesBefore);
-  const envelope = buildExportEnvelope(source); assert.equal(envelope.schemaVersion, '1.4.0');
+  const envelope = buildExportEnvelope(source); assert.equal(envelope.schemaVersion, '1.5.0');
   assert.deepEqual(parseImport(JSON.parse(JSON.stringify(envelope))).dungeon, source);
 });
