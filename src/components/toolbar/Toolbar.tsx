@@ -39,9 +39,10 @@ interface ToolbarProps {
   onOpenMarkdown: () => void;
   onOpenPieceEditor: () => void;
   onOpenPublishing: () => void;
+  onOpenContentEditor: () => void;
 }
 
-export function Toolbar({ onOpenMarkdown, onOpenPieceEditor, onOpenPublishing }: ToolbarProps) {
+export function Toolbar({ onOpenMarkdown, onOpenPieceEditor, onOpenPublishing, onOpenContentEditor }: ToolbarProps) {
   const {
     editorMode,
     setEditorMode,
@@ -175,6 +176,7 @@ export function Toolbar({ onOpenMarkdown, onOpenPieceEditor, onOpenPublishing }:
         padding: '8px 12px', background: '#f8fafc', color: '#0f172a', cursor: 'pointer', fontWeight: 600 }}>
         ピースエディタ
       </button>
+      <button onClick={onOpenContentEditor} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 12px', background: '#f8fafc', cursor: 'pointer' }}>コンテンツ</button>
       <label style={{ fontSize: 12, marginLeft: 8 }}><input type="checkbox" checked={roomLabels.numbers}
         onChange={e => setRoomLabels({ numbers: e.target.checked })} /> 部屋番号</label>
       <label style={{ fontSize: 12 }}><input type="checkbox" checked={roomLabels.names}
