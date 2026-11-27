@@ -3,17 +3,18 @@ import type { AttributeRow } from '../../content/contentForm';
 import { CONTENT_LIMITS } from '../../model/content';
 import { renderMarkdownToHtml } from '../../editor/markdown/markdownRender';
 
-export function ContentMarkdown({ description, gmNotes, onChange, prefix = '', maxLength = CONTENT_LIMITS.markdown }: {
+export function ContentMarkdown({ description, gmNotes, onChange, prefix = '', maxLength = CONTENT_LIMITS.markdown, descriptionLabel = '公開説明', notesLabel = 'GM専用情報' }: {
   description: string; gmNotes: string; onChange: (field: 'description' | 'gmNotes', value: string) => void;
   prefix?: string; maxLength?: number;
+  descriptionLabel?: string; notesLabel?: string;
 }) {
   const [field, setField] = useState<'description' | 'gmNotes'>('description');
   const value = field === 'description' ? description : gmNotes;
   const html = useMemo(() => renderMarkdownToHtml(value, true), [value]);
-  const label = prefix + (field === 'description' ? '公開説明' : 'GM専用情報');
+  const label = prefix + (field === 'description' ? descriptionLabel : notesLabel);
   return <section aria-label="Markdownの編集">
-    <nav aria-label="説明の種類"><button type="button" aria-pressed={field === 'description'} onClick={() => setField('description')}>公開説明</button>
-      <button type="button" aria-pressed={field === 'gmNotes'} onClick={() => setField('gmNotes')}>GM専用情報</button></nav>
+    <nav aria-label="説明の種類"><button type="button" aria-pressed={field === 'description'} onClick={() => setField('description')}>{descriptionLabel}</button>
+      <button type="button" aria-pressed={field === 'gmNotes'} onClick={() => setField('gmNotes')}>{notesLabel}</button></nav>
     <div className="content-markdown">
       <label>{label}（Markdown）<textarea aria-label={`${label}（Markdown）`} value={value} maxLength={maxLength}
         onChange={e => onChange(field, e.target.value)} /></label>

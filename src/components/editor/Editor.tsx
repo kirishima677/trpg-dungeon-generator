@@ -21,6 +21,8 @@ import { snapshotWithSavedMarkdown } from '../../publishing/publishSnapshot';
 import { dungeonRepository } from '../../repository/dungeonRepository';
 import { openEditorWindow } from '../../editor/editorWindows';
 import { collectPieceReferences, registerPieceReferenceReader } from '../../editor/pieces/pieceReferences';
+import '../themes/themes.css';
+const DungeonThemePanel = React.lazy(() => import('../themes/DungeonThemePanel').then(m => ({ default: m.DungeonThemePanel })));
 
 export function Editor() {
   const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom,
@@ -56,6 +58,7 @@ export function Editor() {
   const currentDungeonIdRef = useRef(dungeon.id);
   const [referenceReady, setReferenceReady] = React.useState(false);
   const [windowError, setWindowError] = React.useState('');
+  const [themeOpen, setThemeOpen] = React.useState(false);
 
   useEffect(() => {
     let disposed = false, cleanup: (() => void) | undefined;
@@ -89,6 +92,7 @@ export function Editor() {
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (themeOpen) return;
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
         || (document.activeElement as HTMLElement | null)?.isContentEditable) return;
@@ -112,7 +116,7 @@ export function Editor() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [undo, redo, selectedRoomId, rotateRoom, selectedConnectionId, selectConnection,
-    deleteConnection, deleteRoom, cancelConnection, setEditorMode, selectRoom, editorMode]);
+    deleteConnection, deleteRoom, cancelConnection, setEditorMode, selectRoom, editorMode, themeOpen]);
 
   const onCanvasClick = useCallback(
     (e: React.MouseEvent) => {
@@ -152,7 +156,7 @@ export function Editor() {
   }, []);
 
   return (
-    <div inert={!referenceReady} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <><div inert={!referenceReady || themeOpen} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Menu bar */}
       <MenuBar />
 
@@ -177,6 +181,11 @@ export function Editor() {
       }} onOpenContentEditor={() => {
         const opened = openEditorWindow('content-editor-window', { contentEditor: '1' }, 'popup=yes,width=1200,height=850');
         setWindowError(opened ? '' : 'コンテンツライブラリを開けませんでした。ポップアップを許可してください。');
+      }} onOpenThemeEditor={() => {
+        const opened = openEditorWindow('dungeon-theme-editor-window', { themeEditor: '1' }, 'popup=yes,width=1200,height=850');
+        setWindowError(opened ? '' : 'テーマ管理を開けませんでした。ポップアップを許可してください。');
+      }} onOpenThemeSettings={() => {
+        cancelConnection(); setThemeOpen(true);
       }} />
       {windowError && <p role="alert">{windowError}</p>}
 
@@ -214,6 +223,6 @@ export function Editor() {
         {/* Right: properties */}
         <PropertiesPanel />
       </div>
-    </div>
+    </div>{themeOpen && <React.Suspense fallback={<div role="status">テーマ設定を読み込んでいます…</div>}><DungeonThemePanel key={dungeon.id} close={() => setThemeOpen(false)} /></React.Suspense>}</>
   );
 }

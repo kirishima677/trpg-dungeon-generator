@@ -137,7 +137,7 @@ test('legacy JSON 1.0/1.1/1.2 supplements empty entities and keeps existing IDs,
 });
 test('project JSON restores snapshots with no content library, keeps IDs and does not register or overwrite definitions', async () => {
   const source = entityDungeon(); source.entities = [entity()];
-  const envelope = buildExportEnvelope(source); assert.equal(envelope.schemaVersion, '1.3.0');
+  const envelope = buildExportEnvelope(source); assert.equal(envelope.schemaVersion, '1.4.0');
   const restored = parseDungeonJson(JSON.stringify(envelope)).dungeon;
   assert.deepEqual(restored.entities, source.entities); await pieceRepository.registerDungeonPieces(restored);
   await dungeonRepository.save(restored); assert.equal(await db.contentDefinitions.count(), 0);
