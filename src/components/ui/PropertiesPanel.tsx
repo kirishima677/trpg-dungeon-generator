@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
 import { useDungeonStore } from '../../store';
 import { getWorldConnectors } from '../../utils/geometry';
 import { RoomInformationForm } from './RoomInformationForm';
 import { roomDisplayLabel } from '../../model/roomInformation';
+import './entities.css';
+
+const RoomEntityPanel = lazy(() => import('../entities/RoomEntityPanel').then(m => ({ default: m.RoomEntityPanel })));
 
 export function PropertiesPanel() {
+  const [tab, setTab] = useState<'basic' | 'entity'>('basic');
+  const [openedEntities, setOpenedEntities] = useState(false);
   const { dungeon, selectedRoomId, rotateRoom, deleteRoom, selectedConnectionId, deleteConnection, selectConnection } = useDungeonStore(useShallow(s => ({
     dungeon: s.dungeon,
     selectedRoomId: s.selectedRoomId,
@@ -73,6 +78,11 @@ export function PropertiesPanel() {
       <div style={{ fontWeight: 700, fontSize: 13, color: '#334155', marginBottom: 8 }}>
         部屋プロパティ
       </div>
+      <nav aria-label="部屋プロパティの種類" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        <button aria-pressed={tab === 'basic'} onClick={() => setTab('basic')}>基本情報</button>
+        <button aria-pressed={tab === 'entity'} onClick={() => { setTab('entity'); setOpenedEntities(true); }}>Entity</button>
+      </nav>
+      <div hidden={tab !== 'basic'}>
       <RoomInformationForm key={room.id} room={room} />
       <p style={{ fontSize: 11, color: '#64748b', marginBottom: 8 }}>素材: {room.piece.name}</p>
 
@@ -121,6 +131,8 @@ export function PropertiesPanel() {
           🗑 削除
         </button>
       </div>
+      </div>
+      {openedEntities && <div hidden={tab !== 'entity'}><Suspense fallback={<p>Entityを準備しています…</p>}><RoomEntityPanel key={room.id} roomId={room.id} /></Suspense></div>}
     </div>
   );
 }

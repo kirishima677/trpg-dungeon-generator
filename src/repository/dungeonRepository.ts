@@ -1,25 +1,29 @@
 import { db } from '../db';
 import { normalizeDungeonDocument } from '../model';
 import type { DungeonDocument } from '../model/types';
+import type { DungeonDocumentInput } from '../model/normalizeDungeon';
 
 export const dungeonRepository = {
   async save(dungeon: DungeonDocument): Promise<void> {
     await db.dungeons.put(normalizeDungeonDocument(dungeon));
   },
 
-  async saveMainEditorSnapshot(dungeon: DungeonDocument): Promise<void> {
-    const normalized = normalizeDungeonDocument(dungeon);
-    const updated = await db.dungeons.update(normalized.id, {
-      name: normalized.name,
-      version: normalized.version,
-      rooms: normalized.rooms,
-      connections: normalized.connections,
-      meta: normalized.meta,
-      updatedAt: normalized.updatedAt,
+  async saveMainEditorSnapshot(dungeon: DungeonDocumentInput): Promise<void> {
+    await db.transaction('rw', db.dungeons, async () => {
+      const existing = await db.dungeons.get(dungeon.id);
+      // Older partial editor saves did not carry entities. Preserve the stored array and validate room references.
+      const normalized = normalizeDungeonDocument({ ...dungeon, entities: dungeon.entities ?? existing?.entities ?? [] });
+      if (existing) await db.dungeons.update(normalized.id, {
+        name: normalized.name,
+        version: normalized.version,
+        rooms: normalized.rooms,
+        connections: normalized.connections,
+        entities: normalized.entities,
+        meta: normalized.meta,
+        updatedAt: normalized.updatedAt,
+      });
+      else await db.dungeons.put(normalized);
     });
-    if (updated === 0) {
-      await db.dungeons.put(normalized);
-    }
   },
 
   async saveMarkdown(id: string, markdown: string, updatedAt: string): Promise<void> {

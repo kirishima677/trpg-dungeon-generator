@@ -1,4 +1,5 @@
 import type { PublishAudience, PublishProfile } from '../publishProfile';
+import type { RoomEntityGuide } from './entityGuide';
 
 export interface ScenarioGuideOptions {
   includeMap: boolean;
@@ -22,7 +23,7 @@ export function validateScenarioGuideOptions(options: ScenarioGuideOptions) {
   const keys = Object.keys(defaultScenarioGuideOptions('player')) as (keyof ScenarioGuideOptions)[];
   if (!options || keys.some(key => typeof options[key] !== 'boolean')) throw new Error('シナリオガイドの出力設定が不正です。');
 }
-export interface ScenarioGuideRoom {
+export interface ScenarioGuideRoom extends RoomEntityGuide {
   anchorId: string;
   mapRoomId: string;
   number: string;

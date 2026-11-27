@@ -7,8 +7,9 @@ import type { DungeonDocument } from '../../model/types';
 import {
   buildExportEnvelope,
   downloadJson,
-  parseImport,
+  parseDungeonJson,
 } from '../../utils/exportImport';
+import { ENTITY_LIMITS } from '../../model/entity';
 
 export function MenuBar() {
   const { dungeon, setDungeon, newDungeon } = useDungeonStore(useShallow(s => ({
@@ -41,9 +42,11 @@ export function MenuBar() {
   };
 
   const handleExport = () => {
-    const envelope = buildExportEnvelope(dungeon);
-    downloadJson(envelope, `${dungeon.name}.dungeon.json`);
-    flash('エクスポートしました ✓');
+    try {
+      const envelope = buildExportEnvelope(dungeon);
+      downloadJson(envelope, `${dungeon.name}.dungeon.json`);
+      flash('エクスポートしました ✓');
+    } catch (error) { flash(error instanceof Error ? error.message : 'エクスポートに失敗しました。'); }
   };
 
   const handleImport = () => {
@@ -73,9 +76,9 @@ export function MenuBar() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
+      if (file.size > ENTITY_LIMITS.dungeonJsonBytes) throw new Error('Dungeon JSONは20 MiBまでです。');
       const text = await file.text();
-      const raw = JSON.parse(text);
-      const envelope = parseImport(raw);
+      const envelope = parseDungeonJson(text);
       await pieceRepository.registerDungeonPieces(envelope.dungeon);
       setDungeon(envelope.dungeon);
       flash('インポートしました ✓');

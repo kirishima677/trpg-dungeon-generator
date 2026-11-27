@@ -9,6 +9,8 @@ import { SCHEMA_VERSION } from '../utils/exportImport';
 import { pieceReferencesFrozen } from '../editor/pieces/pieceReferences';
 import { nextRoomNumber, normalizeRoomInformation, roomInformationError } from '../model/roomInformation';
 import type { RoomLabelVisibility } from '../editor/rooms/roomLabel';
+import { applyEntityCommand } from '../model/entity';
+import type { EntityCommand } from '../model/entity';
 
 const MAX_HISTORY = 50;
 
@@ -45,6 +47,7 @@ export interface DungeonStore {
   // ── Dungeon actions ───────────────────────────────────────────────────────
   setDungeon: (dungeon: DungeonDocumentInput) => void;
   newDungeon: () => void;
+  changeEntities: (command: EntityCommand) => string | null;
 
   // ── Room actions ──────────────────────────────────────────────────────────
   addRoom: (room: PlacedRoomInput) => void;
@@ -85,6 +88,7 @@ function createEmptyDungeon(): DungeonDocument {
     version: SCHEMA_VERSION,
     rooms: [],
     connections: [],
+    entities: [],
     markdown: '',
     meta: { gridSize: 40 },
     createdAt: now,
@@ -167,6 +171,16 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
     });
   },
 
+  changeEntities(command) {
+    const { dungeon, undoStack } = get();
+    try {
+      const entities = applyEntityCommand(dungeon.entities, dungeon.rooms, command);
+      if (entities) set({ dungeon: touch({ ...dungeon, entities }),
+        undoStack: [...undoStack.slice(-MAX_HISTORY + 1), snapshot(dungeon)], redoStack: [] });
+      return null;
+    } catch (e) { return e instanceof Error ? e.message : 'Entityを変更できませんでした。'; }
+  },
+
   // ── Internal helper: push to undo & update ────────────────────────────────
   // (not exposed but used via closures below)
 
@@ -241,7 +255,8 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
     if (!dungeon.rooms.some(room => room.id === id)) return;
     const rooms = dungeon.rooms.filter(r => r.id !== id);
     const connections = dungeon.connections.filter(c => c.fromRoomId !== id && c.toRoomId !== id);
-    const next = touch({ ...dungeon, rooms, connections });
+    const entities = dungeon.entities.filter(e => e.roomId !== id);
+    const next = touch({ ...dungeon, rooms, connections, entities });
     set({
       dungeon: next,
       selectedRoomId: null,
