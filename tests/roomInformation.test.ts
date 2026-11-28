@@ -194,7 +194,7 @@ test('IndexedDB legacy read, update and repeated load preserve stable numbers an
 test('new JSON roundtrip includes public and GM information without view or generated corridor data', () => {
   setup(); connect(); state().updateRoomInformation('a', info());
   const before = structuredClone(state().dungeon), envelope = buildExportEnvelope(before);
-  assert.equal(envelope.schemaVersion, '1.6.0');
+  assert.equal(envelope.schemaVersion, '1.7.0');
   const imported = parseImport(JSON.parse(JSON.stringify(envelope))).dungeon;
   assert.deepEqual(imported, before); assert.deepEqual(imported.rooms[0].information, info());
   assert.doesNotMatch(JSON.stringify(envelope), /sourceConnectionIds|roomLabels|openConnectorIds/);

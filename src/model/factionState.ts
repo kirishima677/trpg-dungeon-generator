@@ -62,7 +62,7 @@ export type FactionCommand=
  |{type:'add';definition:FactionDefinition}|{type:'edit';id:string;edits:FactionEdits}|{type:'duplicate';id:string}|{type:'refresh';id:string;definition:FactionDefinition}|{type:'delete';id:string}
  |{type:'relation';relation:FactionRelation}|{type:'delete-relation';id:string}|{type:'assign-rooms';assignments:RoomFactionAssignment[]};
 /** One complete, validated change; callers commit it to history once. */
-export function applyFactionCommand(dungeon:DungeonDocument,command:FactionCommand):FactionState & {entities:EntityInstance[]} {
+export function applyFactionCommand(dungeon:DungeonDocument,command:FactionCommand):FactionState & {entities:EntityInstance[];encounters:DungeonDocument['encounters']} {
   let {factions,factionRelations,roomFactionAssignments,entities}=dungeon;
   if(command.type==='add')factions=[...factions,createFactionInstance(command.definition,factions.length)];
   else if(command.type==='relation')factionRelations=[...factionRelations.filter(r=>r.id!==command.relation.id),command.relation];
@@ -87,5 +87,6 @@ export function applyFactionCommand(dungeon:DungeonDocument,command:FactionComma
       factions=factions.map(v=>v.id===f.id?normalizeFactionInstance({...v,factionSnapshot:command.definition}):v);
     } else factions=factions.map(v=>v.id===f.id?normalizeFactionInstance({...v,...command.edits,id:v.id,sourceFactionId:v.sourceFactionId,factionSnapshot:v.factionSnapshot}):v);
   }
-  return {...normalizeFactionState({factions,factionRelations,roomFactionAssignments},dungeon.rooms,entities),entities};
+  const encounters=command.type==='delete'?dungeon.encounters.map(e=>({...e,factionBindings:e.factionBindings.map(b=>b.factionId===command.id?{roleId:b.roleId}:b)})):dungeon.encounters;
+  return {...normalizeFactionState({factions,factionRelations,roomFactionAssignments},dungeon.rooms,entities),entities,encounters};
 }

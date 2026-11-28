@@ -11,7 +11,7 @@ import { roomDisplayLabel } from '../../model/roomInformation';
 import { EntityEditor } from './EntityEditor';
 import { ContentSelectionDialog } from './ContentSelectionDialog';
 
-export function RoomEntityPanel({ roomId, repository = contentRepository }: { roomId: string; repository?: ContentRepository }) {
+export function RoomEntityPanel({ roomId, repository = contentRepository,initialEntityId }: { roomId: string; repository?: ContentRepository;initialEntityId?:string }) {
   const { dungeon, change } = useDungeonStore(useShallow(s => ({ dungeon: s.dungeon, change: s.changeEntities })));
   const library = useContentLibrary(repository);
   const [selected, setSelected] = useState(''), [adding, setAdding] = useState(false), [refreshing, setRefreshing] = useState(false);
@@ -20,6 +20,7 @@ export function RoomEntityPanel({ roomId, repository = contentRepository }: { ro
   useEffect(() => { active.current = true; return () => { active.current = false; request.current++; }; }, []);
   const entities = useMemo(() => dungeon.entities.filter(e => e.roomId === roomId), [dungeon.entities, roomId]);
   const entity = entities.find(e => e.id === selected);
+  useEffect(()=>{if(initialEntityId)setSelected(initialEntityId);},[initialEntityId]);
   const latest = entity && library.contents.find(c => c.id === entity.sourceContentId);
   const command = (value: EntityCommand) => { const error = change(value); setError(error ?? ''); return error; };
   const withContent = async (id: string, operation: (content: NonNullable<Awaited<ReturnType<ContentRepository['get']>>>) => void) => {

@@ -28,7 +28,8 @@ export function EntityEditor({ entity, apply, onDirtyChange, factions }: { entit
   useEffect(() => { onDirtyChange(dirty); return () => onDirtyChange(false); }, [dirty, onDirtyChange]);
   return <section aria-label="Entityの編集">
     <p>Entity ID: {entity.id}</p><p>元の素材: {entity.contentSnapshot.name} / {CONTENT_LABELS[entity.contentSnapshot.kind]}</p>
-    {entity.origin&&<p>Room Theme由来: {entity.origin.sourceRoomThemeId} / 必須項目: {entity.origin.requiredEntryId}</p>}
+    {entity.origin?.type==='encounter'&&<p>Encounter由来: {entity.origin.encounterInstanceId} / 構成要素: {entity.origin.entryId}</p>}
+    {entity.origin?.type==='room-theme-required'&&<p>Room Theme由来: {entity.origin.sourceRoomThemeId} / 必須項目: {entity.origin.requiredEntryId}</p>}
     {factions&&['monster','npc'].includes(entity.contentSnapshot.kind)&&<label>所属勢力<select aria-label="Entity所属勢力" value={draft.factionId??''} onChange={e=>setDraft({...draft,factionId:e.target.value||undefined})}><option value="">無所属</option>{factions.map(f=><option key={f.id} value={f.id}>{factionDisplayName(f)}</option>)}</select><small>この数量全体が1つの勢力に所属します。候補外でも手動設定できます。</small></label>}
     <label>個別名称<input aria-label="Entity個別名称" maxLength={ENTITY_LIMITS.name} value={draft.customName} placeholder={entity.contentSnapshot.name}
       onChange={e => setDraft({ ...draft, customName: e.target.value })} /></label>

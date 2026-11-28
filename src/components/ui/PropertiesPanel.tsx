@@ -1,3 +1,4 @@
+import type {ConnectionScene} from '../../editor/connectors/corridor/connectionScene';
 import {RoomFactionPanel} from '../factions/RoomFactionPanel';
 import React, { lazy, Suspense, useState } from 'react';
 import { useShallow } from 'zustand/shallow';
@@ -10,8 +11,12 @@ import './entities.css';
 const RoomEntityPanel = lazy(() => import('../entities/RoomEntityPanel').then(m => ({ default: m.RoomEntityPanel })));
 const RoomThemePanel = lazy(() => import('../themes/RoomThemePanel').then(m => ({ default: m.RoomThemePanel })));
 
-export function PropertiesPanel() {
-  const [tab, setTab] = useState<'basic' | 'entity' | 'theme' | 'faction'>('basic');
+const RoomEncounterPanel=lazy(()=>import('../encounters/RoomEncounterPanel').then(m=>({default:m.RoomEncounterPanel})));
+
+export function PropertiesPanel({scene}:{scene?:ConnectionScene}={}) {
+  const [tab, setTab] = useState<'basic' | 'entity' | 'theme' | 'faction' | 'encounter'>('basic');
+  const [requestedEntity,setRequestedEntity]=useState<string|undefined>();
+  const successfulConnectionIds=React.useMemo(()=>scene?new Set(scene.drawings.filter(d=>d.result.status==='success'&&(d.connection.type!=='corridor'||d.corridor?.status==='success')).map(d=>d.connection.id)):undefined,[scene]);
   const [openedThemes, setOpenedThemes] = useState(false),[duplicateError,setDuplicateError] = useState('');
   const [openedEntities, setOpenedEntities] = useState(false);
   const { dungeon, selectedRoomId, rotateRoom, deleteRoom, selectedConnectionId, deleteConnection, selectConnection } = useDungeonStore(useShallow(s => ({
@@ -84,6 +89,7 @@ export function PropertiesPanel() {
       <nav aria-label="部屋プロパティの種類" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         <button aria-pressed={tab === 'basic'} onClick={() => setTab('basic')}>基本情報</button>
         <button aria-pressed={tab === 'entity'} onClick={() => { setTab('entity'); setOpenedEntities(true); }}>Entity</button>
+        <button aria-pressed={tab==='encounter'} onClick={()=>setTab('encounter')}>Encounter</button>
         <button aria-pressed={tab==='faction'} onClick={()=>setTab('faction')}>勢力</button>
         <button aria-pressed={tab === 'theme'} onClick={() => { setTab('theme');setOpenedThemes(true); }}>Room Theme</button>
       </nav>
@@ -139,7 +145,8 @@ export function PropertiesPanel() {
       </div>
       {duplicateError&&<p role="alert">{duplicateError}</p>}
       </div>
-      {openedEntities && <div hidden={tab !== 'entity'}><Suspense fallback={<p>Entityを準備しています…</p>}><RoomEntityPanel key={room.id} roomId={room.id} /></Suspense></div>}
+      {openedEntities && <div hidden={tab !== 'entity'}><Suspense fallback={<p>Entityを準備しています…</p>}><RoomEntityPanel key={room.id} roomId={room.id} initialEntityId={requestedEntity} /></Suspense></div>}
+      {tab==='encounter'&&<Suspense fallback={<p>Encounterを準備しています…</p>}><RoomEncounterPanel key={room.id} roomId={room.id} successfulConnectionIds={successfulConnectionIds} onOpenEntity={id=>{setRequestedEntity(id);setOpenedEntities(true);setTab('entity');}} /></Suspense>}
       {tab==='faction'&&<RoomFactionPanel key={`${room.id}:${JSON.stringify(dungeon.roomFactionAssignments.find(a=>a.roomId===room.id))}`} roomId={room.id} />}
       {openedThemes && <div hidden={tab !== 'theme'}><Suspense fallback={<p>Room Themeを準備しています…</p>}><RoomThemePanel key={room.id} roomId={room.id} /></Suspense></div>}
     </div>

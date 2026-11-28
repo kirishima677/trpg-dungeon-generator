@@ -112,3 +112,12 @@ export function emptyFactionSelection(mode:SelectionMode = 'none'):FactionSelect
 export function resolveFactionSelection<T extends {id:string;tags:string[]}>(value:FactionSelectionPolicy,library:readonly T[]):SelectionResult<T> {
   const p=normalizeFactionSelection(value);return resolve(p.mode,p.includeFactionIds,p.excludeFactionIds,p.tags,library);
 }
+
+export interface EncounterSelectionPolicy {mode:SelectionMode;includeEncounterIds:string[];excludeEncounterIds:string[];tags:TagSelectionCriteria}
+export interface DungeonThemeSelectionPolicy {mode:SelectionMode;includeDungeonThemeIds:string[];excludeDungeonThemeIds:string[];tags:TagSelectionCriteria}
+export function emptyEncounterSelection(mode:SelectionMode='none'):EncounterSelectionPolicy {return {mode,includeEncounterIds:[],excludeEncounterIds:[],tags:{allOf:[],anyOf:[],noneOf:[]}};}
+export function normalizeEncounterSelection(value:unknown):EncounterSelectionPolicy {const {raw,mode,tags}=common(value);return {mode,tags,includeEncounterIds:selectionList(raw.includeEncounterIds,'Encounter ID',true),excludeEncounterIds:selectionList(raw.excludeEncounterIds,'除外Encounter ID',true)};}
+export function resolveEncounterSelection<T extends {id:string;tags:string[]}>(value:EncounterSelectionPolicy,library:readonly T[]):SelectionResult<T> {const p=normalizeEncounterSelection(value);return resolve(p.mode,p.includeEncounterIds,p.excludeEncounterIds,p.tags,library);}
+export function emptyDungeonThemeSelection(mode:SelectionMode='all'):DungeonThemeSelectionPolicy {return {mode,includeDungeonThemeIds:[],excludeDungeonThemeIds:[],tags:{allOf:[],anyOf:[],noneOf:[]}};}
+export function normalizeDungeonThemeSelection(value:unknown):DungeonThemeSelectionPolicy {const {raw,mode,tags}=common(value);return {mode,tags,includeDungeonThemeIds:selectionList(raw.includeDungeonThemeIds,'Dungeon Theme ID',true),excludeDungeonThemeIds:selectionList(raw.excludeDungeonThemeIds,'除外Dungeon Theme ID',true)};}
+export function resolveDungeonThemeSelection<T extends {id:string;tags:string[]}>(value:DungeonThemeSelectionPolicy,library:readonly T[]):SelectionResult<T> {const p=normalizeDungeonThemeSelection(value);return resolve(p.mode,p.includeDungeonThemeIds,p.excludeDungeonThemeIds,p.tags,library);}

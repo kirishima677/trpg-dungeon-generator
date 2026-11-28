@@ -51,7 +51,7 @@ test('production entry and each window exclude unrelated screens and the Markdow
   const entry = chunks.find(chunk => chunk.isEntry)!;
   assert.ok(entry);
   const roots = ['editor/Editor.tsx', 'markdown/MarkdownEditorWindow.tsx',
-    'pieceEditor/PieceEditorWindow.tsx', 'publishing/PublishingWindow.tsx', 'content/ContentEditorWindow.tsx', 'themes/ThemeEditorWindow.tsx', 'themes/RoomThemeEditorWindow.tsx', 'factions/FactionEditorWindow.tsx'];
+    'pieceEditor/PieceEditorWindow.tsx', 'publishing/PublishingWindow.tsx', 'content/ContentEditorWindow.tsx', 'themes/ThemeEditorWindow.tsx', 'themes/RoomThemeEditorWindow.tsx', 'factions/FactionEditorWindow.tsx','encounters/EncounterTemplateEditorWindow.tsx'];
   function modulesFrom(file: string, visited = new Set<string>()): string[] {
     if (visited.has(file)) return [];
     visited.add(file);

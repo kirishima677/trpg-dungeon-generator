@@ -27,3 +27,8 @@ export type { SelectionMode, TagSelectionCriteria, PieceSelectionPolicy, Content
 export type { FactionDefinition, FactionDraft } from './faction';
 export type { FactionInstance, FactionRelation, RoomFactionAssignment, FactionState, FactionEdits } from './factionState';
 export type { FactionSelectionPolicy } from './themeSelection';
+
+export type { EncounterSelectionPolicy, DungeonThemeSelectionPolicy } from './themeSelection';
+export type { EncounterTemplate, EncounterTemplateDraft, EncounterApplicability, EncounterFactionRole, EncounterFactionRelationCondition, EncounterContentEntry } from './encounter/template';
+export type { EncounterInstance, EncounterEdits } from './encounter/state';
+export type { EncounterEntityOrigin, EntityOrigin } from './entity';

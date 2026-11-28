@@ -1,3 +1,4 @@
+import {buildEncounterGuides} from './scenario/encounterGuide';
 import {buildFactionGuides} from './scenario/factionGuide';
 import type { Connection, DungeonDocument, PlacedRoom } from '../model/types';
 import { pieceErrors } from '../editor/pieces/pieceDefinition';
@@ -34,7 +35,8 @@ export function buildScenarioPublishDocument(source: DungeonDocument, profile: P
     return value;
   };
   const factions=buildFactionGuides(source,gm,options.includeGmNotes,text);
-  const entities = buildEntityGuides(source, gm, options, text);
+  const encounters=buildEncounterGuides(source,gm,options,text);
+  const entities = buildEntityGuides(source, gm, options, text,e=>!gm||e.origin?.type!=='encounter');
   const ids = new Set<string>(), anchors = new Set<string>();
   // Sort IDs first so the rare hash-collision suffix is stable across input order.
   const indexed = source.rooms.map((room, index) => ({ room, index })).sort((a, b) => a.room.id < b.room.id ? -1 : a.room.id > b.room.id ? 1 : 0);
@@ -47,6 +49,7 @@ export function buildScenarioPublishDocument(source: DungeonDocument, profile: P
     const info = room.information;
     return { anchorId, mapRoomId: `room-${index}`, number: text(info.number),
       ...entities.get(room.id),
+      ...encounters.get(room.id),
       ...(gm&&factions.byRoom.has(room.id)?{factionControl:factions.byRoom.get(room.id)}:{}),
       ...(profile.showRoomNames && info.name.trim() ? { name: text(info.name.trim()) } : {}),
       ...(options.includeRoomDescriptions && info.description.trim() ? { description: text(info.description) } : {}),
