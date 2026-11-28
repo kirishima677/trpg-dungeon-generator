@@ -11,7 +11,7 @@ export const ROOM_THEME_LIMITS = { ...THEME_LIMITS, purpose: 1000, required: 50,
 export const ROOM_CONSTRAINT_FIELDS = ['minCells', 'maxCells', 'minConnectors', 'maxConnectors', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const;
 export type RoomPieceConstraints = Partial<Record<typeof ROOM_CONSTRAINT_FIELDS[number], number>>;
 export interface RequiredContentEntry extends EntityEdits { id: string; contentId: string; expectedKind: ContentKind }
-export interface RoomTheme extends Omit<DungeonTheme, 'roomThemeSelection'> {
+export interface RoomTheme extends Omit<DungeonTheme, 'roomThemeSelection' | 'factionSelection'> {
   purpose: string; pieceConstraints: RoomPieceConstraints; requiredContents: RequiredContentEntry[];
 }
 export type RoomThemeDraft = Omit<RoomTheme, 'createdAt' | 'updatedAt'>;
@@ -47,7 +47,7 @@ export function normalizeRoomTheme(value: unknown): RoomTheme {
   const theme = { ...draft, createdAt, updatedAt }; checkThemeSize(theme); return theme;
 }
 export function newRoomTheme(): RoomThemeDraft {
-  const { roomThemeSelection: _dungeonOnly, ...base } = newTheme();
+  const { roomThemeSelection: _dungeonOnly, factionSelection: _factions, ...base } = newTheme();
   return { ...base, purpose: '', pieceConstraints: {}, requiredContents: [] };
 }
 export function duplicateRoomTheme(value: RoomThemeDraft): RoomThemeDraft {

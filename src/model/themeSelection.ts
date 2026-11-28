@@ -7,6 +7,7 @@ export const SELECTION_MODES = ['all', 'filtered', 'explicit', 'none'] as const;
 export type SelectionMode = typeof SELECTION_MODES[number];
 export interface TagSelectionCriteria { allOf: string[]; anyOf: string[]; noneOf: string[] }
 export interface PieceSelectionPolicy { mode: SelectionMode; includePieceIds: string[]; excludePieceIds: string[]; tags: TagSelectionCriteria }
+export interface FactionSelectionPolicy { mode: SelectionMode; includeFactionIds: string[]; excludeFactionIds: string[]; tags: TagSelectionCriteria }
 export interface RoomThemeSelectionPolicy { mode: SelectionMode; includeRoomThemeIds: string[]; excludeRoomThemeIds: string[]; tags: TagSelectionCriteria }
 export interface ContentKindSelection { mode: SelectionMode; includeContentIds: string[]; excludeContentIds: string[]; tags: TagSelectionCriteria }
 export type ContentSelectionPolicy = Record<ContentKind, ContentKindSelection>;
@@ -99,4 +100,15 @@ export function resolveContentSelection(value: ContentSelectionPolicy, contents:
     warnings.push(...result.warnings); return [kind, result.candidates];
   })) as Record<ContentKind, ContentDefinition[]>;
   return { candidates, warnings };
+}
+
+export function normalizeFactionSelection(value: unknown): FactionSelectionPolicy {
+  const {raw,mode,tags} = common(value);
+  return {mode,tags,includeFactionIds:selectionList(raw.includeFactionIds,'明示Faction ID',true),excludeFactionIds:selectionList(raw.excludeFactionIds,'除外Faction ID',true)};
+}
+export function emptyFactionSelection(mode:SelectionMode = 'none'):FactionSelectionPolicy {
+  return {mode,includeFactionIds:[],excludeFactionIds:[],tags:{allOf:[],anyOf:[],noneOf:[]}};
+}
+export function resolveFactionSelection<T extends {id:string;tags:string[]}>(value:FactionSelectionPolicy,library:readonly T[]):SelectionResult<T> {
+  const p=normalizeFactionSelection(value);return resolve(p.mode,p.includeFactionIds,p.excludeFactionIds,p.tags,library);
 }

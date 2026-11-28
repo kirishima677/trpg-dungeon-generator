@@ -23,3 +23,7 @@ export type { RoomTheme, RoomThemeDraft, RoomThemeAssignment, RequiredContentEnt
 export type { RoomThemeSelectionPolicy } from './themeSelection';
 export type { RoomThemeEntityOrigin } from './entity';
 export type { SelectionMode, TagSelectionCriteria, PieceSelectionPolicy, ContentKindSelection, ContentSelectionPolicy, SelectionResult, SelectionWarning } from './themeSelection';
+
+export type { FactionDefinition, FactionDraft } from './faction';
+export type { FactionInstance, FactionRelation, RoomFactionAssignment, FactionState, FactionEdits } from './factionState';
+export type { FactionSelectionPolicy } from './themeSelection';

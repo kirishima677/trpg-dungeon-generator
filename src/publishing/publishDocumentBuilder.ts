@@ -1,3 +1,4 @@
+import {buildFactionGuides} from './scenario/factionGuide';
 import type { Connection, DungeonDocument, PlacedRoom } from '../model/types';
 import { pieceErrors } from '../editor/pieces/pieceDefinition';
 import { roomDisplayName } from '../model/roomInformation';
@@ -32,6 +33,7 @@ export function buildScenarioPublishDocument(source: DungeonDocument, profile: P
     if (total > MAX_GUIDE_TEXT_CHARS) throw new Error(`ガイド全体のテキストは${MAX_GUIDE_TEXT_CHARS.toLocaleString()}文字までです。`);
     return value;
   };
+  const factions=buildFactionGuides(source,gm,options.includeGmNotes,text);
   const entities = buildEntityGuides(source, gm, options, text);
   const ids = new Set<string>(), anchors = new Set<string>();
   // Sort IDs first so the rare hash-collision suffix is stable across input order.
@@ -45,12 +47,14 @@ export function buildScenarioPublishDocument(source: DungeonDocument, profile: P
     const info = room.information;
     return { anchorId, mapRoomId: `room-${index}`, number: text(info.number),
       ...entities.get(room.id),
+      ...(gm&&factions.byRoom.has(room.id)?{factionControl:factions.byRoom.get(room.id)}:{}),
       ...(profile.showRoomNames && info.name.trim() ? { name: text(info.name.trim()) } : {}),
       ...(options.includeRoomDescriptions && info.description.trim() ? { description: text(info.description) } : {}),
       ...(gm && options.includeGmNotes && info.gmNotes.trim() ? { gmNotes: text(info.gmNotes) } : {}),
       ...(gm && options.includeRoomTags && info.tags.length ? { tags: info.tags.map(text) } : {}) };
   }).sort((a, b) => compareRoomNumbers(a.number, b.number) || (a.anchorId < b.anchorId ? -1 : a.anchorId > b.anchorId ? 1 : 0));
   return { audience: profile.audience, scenario: { title: text(source.name), rooms,
+    ...(factions.factions.length?{factions:factions.factions}:{}),
     ...(gm && options.includeScenarioMarkdown && source.markdown.trim() ? { scenarioMarkdown: text(source.markdown) } : {}) } };
 }
 

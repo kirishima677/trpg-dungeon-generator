@@ -1,3 +1,4 @@
+import { normalizeFactionState } from './factionState';
 import type { Connection, DungeonDocument, PlacedRoomInput } from './types';
 import { normalizeConnections } from './connections';
 import { normalizeRoomInformationList } from './roomInformation';
@@ -10,11 +11,12 @@ type LegacyRoom = PlacedRoomInput & {
   connections?: Record<string, { roomId: string; connectorId: string }>;
 };
 
-export type DungeonDocumentInput = Omit<DungeonDocument, 'markdown' | 'connections' | 'rooms' | 'entities'> & {
+export type DungeonDocumentInput = Omit<DungeonDocument, 'markdown' | 'connections' | 'rooms' | 'entities' | 'factions' | 'factionRelations' | 'roomFactionAssignments'> & {
   markdown?: string;
   connections?: Connection[];
   rooms: LegacyRoom[];
   entities?: DungeonDocument['entities'];
+  factions?: DungeonDocument['factions']; factionRelations?: DungeonDocument['factionRelations']; roomFactionAssignments?: DungeonDocument['roomFactionAssignments'];
 };
 
 export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): DungeonDocument {
@@ -44,13 +46,16 @@ export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): Dungeon
   }));
   const { theme: rawTheme, ...base } = dungeon;
   const theme = normalizeThemeAssignment(rawTheme);
+  const entities = normalizeEntities(dungeon.entities,rooms);
+  const factionState=normalizeFactionState(dungeon,rooms,entities);
   return {
     ...base,
+    ...factionState,
     version: SCHEMA_VERSION,
     rooms,
     connections: normalizeConnections(rooms, dungeon.connections ?? legacyConnections),
     markdown: dungeon.markdown ?? '',
-    entities: normalizeEntities(dungeon.entities, rooms),
+    entities,
     ...(theme ? { theme } : {}),
   };
 }

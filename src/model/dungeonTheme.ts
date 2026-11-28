@@ -1,3 +1,5 @@
+import { emptyFactionSelection, normalizeFactionSelection } from './themeSelection';
+import type { FactionSelectionPolicy } from './themeSelection';
 import { v4 as uuid } from 'uuid';
 import { emptyContentSelection, emptyPieceSelection, emptyRoomThemeSelection, normalizeContentSelection, normalizePieceSelection, normalizeRoomThemeSelection, selectionList, selectionRecord } from './themeSelection';
 import type { ContentSelectionPolicy, PieceSelectionPolicy, RoomThemeSelectionPolicy } from './themeSelection';
@@ -5,7 +7,7 @@ import type { ContentSelectionPolicy, PieceSelectionPolicy, RoomThemeSelectionPo
 export interface DungeonTheme {
   id: string; name: string; genre: string; category: string; summary: string; description: string; gmNotes: string; tags: string[];
   pieceSelection: PieceSelectionPolicy; contentSelection: ContentSelectionPolicy; createdAt: string; updatedAt: string;
-  roomThemeSelection: RoomThemeSelectionPolicy;
+  roomThemeSelection: RoomThemeSelectionPolicy; factionSelection: FactionSelectionPolicy;
 }
 export type DungeonThemeDraft = Omit<DungeonTheme, 'createdAt' | 'updatedAt'>;
 export interface DungeonThemeAssignment { sourceThemeId: string; themeSnapshot: DungeonTheme }
@@ -16,15 +18,19 @@ export function themeText(value: unknown, field: string, max: number, required =
 }
 export function checkThemeSize(value: unknown) { if (new TextEncoder().encode(JSON.stringify(value)).length > THEME_LIMITS.bytes) throw new Error('テーマ定義は512 KiBまでです。'); }
 /** Shared fields only: neither Room Theme constraints nor Dungeon Theme links belong here. */
-export function normalizeThemeFields(value: unknown) {
+export function normalizeThemeMetadata(value: unknown) {
   const raw = selectionRecord(value);
   return { id: themeText(raw.id, 'Theme ID', THEME_LIMITS.id, true), name: themeText(raw.name, 'テーマ名称', THEME_LIMITS.name, true).trim(),
     genre: themeText(raw.genre, 'ジャンル', THEME_LIMITS.classification).trim(), category: themeText(raw.category, '施設分類', THEME_LIMITS.classification).trim(),
     summary: themeText(raw.summary, 'テーマ概要', THEME_LIMITS.summary), description: themeText(raw.description, 'テーマ詳細', THEME_LIMITS.markdown), gmNotes: themeText(raw.gmNotes, 'テーマGM情報', THEME_LIMITS.markdown),
-    tags: selectionList(raw.tags, 'テーマタグ'), pieceSelection: normalizePieceSelection(raw.pieceSelection), contentSelection: normalizeContentSelection(raw.contentSelection) };
+    tags: selectionList(raw.tags, 'テーマタグ') };
+}
+export function normalizeThemeFields(value:unknown) {
+  const raw=selectionRecord(value); return {...normalizeThemeMetadata(value),pieceSelection:normalizePieceSelection(raw.pieceSelection),contentSelection:normalizeContentSelection(raw.contentSelection)};
 }
 export function normalizeThemeDraft(value: unknown): DungeonThemeDraft {
   const raw = selectionRecord(value), theme = { ...normalizeThemeFields(value),
+    factionSelection: raw.factionSelection === undefined ? emptyFactionSelection('all') : normalizeFactionSelection(raw.factionSelection),
     roomThemeSelection: raw.roomThemeSelection === undefined ? emptyRoomThemeSelection('all') : normalizeRoomThemeSelection(raw.roomThemeSelection) };
   checkThemeSize(theme); return theme;
 }
@@ -38,7 +44,7 @@ export function normalizeTheme(value: unknown): DungeonTheme {
   const theme = { ...draft, createdAt, updatedAt }; checkThemeSize(theme); return theme;
 }
 export function newTheme(): DungeonThemeDraft {
-  return { id: uuid(), name: '', genre: '', category: '', summary: '', description: '', gmNotes: '', tags: [], pieceSelection: emptyPieceSelection(), contentSelection: emptyContentSelection(), roomThemeSelection: emptyRoomThemeSelection() };
+  return { id: uuid(), name: '', genre: '', category: '', summary: '', description: '', gmNotes: '', tags: [], pieceSelection: emptyPieceSelection(), contentSelection: emptyContentSelection(), roomThemeSelection: emptyRoomThemeSelection(), factionSelection: emptyFactionSelection() };
 }
 export function duplicateTheme(value: DungeonThemeDraft): DungeonThemeDraft {
   return { ...normalizeThemeDraft(value), id: uuid(), name: `${value.name}（複製）` };

@@ -1,3 +1,5 @@
+import {normalizeFactionSelection} from '../model/themeSelection';
+import type {FactionSelectionPolicy} from '../model/themeSelection';
 import { CONTENT_KINDS } from '../model/content';
 import type { ContentKind } from '../model/content';
 import type { DungeonThemeDraft } from '../model/dungeonTheme';
@@ -8,10 +10,10 @@ import { formatStringList, parseStringList } from '../utils/stringList';
 
 export interface PolicyForm { mode: SelectionMode; include: string; exclude: string; allOf: string; anyOf: string; noneOf: string }
 export interface ThemePolicyForm<T> { theme: T; tagsText: string; piece: PolicyForm; content: Record<ContentKind, PolicyForm> }
-export interface ThemeForm extends ThemePolicyForm<DungeonThemeDraft> { roomThemes: PolicyForm }
-export function toPolicyForm(policy: PieceSelectionPolicy | ContentKindSelection | RoomThemeSelectionPolicy): PolicyForm {
-  return { mode: policy.mode, include: formatStringList('includePieceIds' in policy ? policy.includePieceIds : 'includeContentIds' in policy ? policy.includeContentIds : policy.includeRoomThemeIds),
-    exclude: formatStringList('excludePieceIds' in policy ? policy.excludePieceIds : 'excludeContentIds' in policy ? policy.excludeContentIds : policy.excludeRoomThemeIds),
+export interface ThemeForm extends ThemePolicyForm<DungeonThemeDraft> { roomThemes: PolicyForm; factions:PolicyForm }
+export function toPolicyForm(policy: PieceSelectionPolicy | ContentKindSelection | RoomThemeSelectionPolicy | FactionSelectionPolicy): PolicyForm {
+  return { mode: policy.mode, include: formatStringList('includePieceIds' in policy ? policy.includePieceIds : 'includeContentIds' in policy ? policy.includeContentIds : 'includeRoomThemeIds' in policy ? policy.includeRoomThemeIds : policy.includeFactionIds),
+    exclude: formatStringList('excludePieceIds' in policy ? policy.excludePieceIds : 'excludeContentIds' in policy ? policy.excludeContentIds : 'excludeRoomThemeIds' in policy ? policy.excludeRoomThemeIds : policy.excludeFactionIds),
     allOf: formatStringList(policy.tags.allOf), anyOf: formatStringList(policy.tags.anyOf), noneOf: formatStringList(policy.tags.noneOf) };
 }
 export const policyList = (text: string, ids = false) => text.trim() ? parseStringList(text, ids ? 'ID' : 'タグ') : [];
@@ -30,7 +32,9 @@ export function toThemePolicyForm<T extends Pick<DungeonThemeDraft,'tags' | 'pie
   return { theme: structuredClone(value), tagsText: formatStringList(value.tags), piece: toPolicyForm(value.pieceSelection),
     content: Object.fromEntries(CONTENT_KINDS.map(kind => [kind, toPolicyForm(value.contentSelection[kind])])) as Record<ContentKind, PolicyForm> };
 }
-export function toThemeForm(value: DungeonThemeDraft): ThemeForm { return { ...toThemePolicyForm(value), roomThemes:toPolicyForm(value.roomThemeSelection) }; }
+export function toThemeForm(value: DungeonThemeDraft): ThemeForm { return { ...toThemePolicyForm(value), roomThemes:toPolicyForm(value.roomThemeSelection),factions:toPolicyForm(value.factionSelection) }; }
 export function fromThemeForm(form: ThemeForm): DungeonThemeDraft {
-  return normalizeThemeDraft({ ...form.theme, tags: policyList(form.tagsText), ...fromPolicyForms(form),roomThemeSelection:fromRoomThemePolicyForm(form.roomThemes) });
+  return normalizeThemeDraft({ ...form.theme, tags: policyList(form.tagsText), ...fromPolicyForms(form),roomThemeSelection:fromRoomThemePolicyForm(form.roomThemes),factionSelection:fromFactionPolicyForm(form.factions) });
 }
+
+export function fromFactionPolicyForm(form:PolicyForm):FactionSelectionPolicy {return normalizeFactionSelection({...policy(form),includeFactionIds:policyList(form.include,true),excludeFactionIds:policyList(form.exclude,true)});}

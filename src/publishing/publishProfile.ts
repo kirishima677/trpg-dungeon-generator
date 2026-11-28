@@ -1,6 +1,7 @@
 export type PublishAudience = 'player' | 'gm';
 export interface PublishProfile {
   audience: PublishAudience;
+  showFactions?:boolean;
   showGrid: boolean;
   showRoomNumbers: boolean;
   showRoomNames: boolean;
@@ -16,6 +17,7 @@ export function defaultPublishProfile(audience: PublishAudience = 'player'): Pub
 }
 export function validatePublishProfile(profile: PublishProfile): void {
   if (!profile || !['player', 'gm'].includes(profile.audience)
+    || (profile.showFactions!==undefined&&typeof profile.showFactions!=='boolean')
     || !['white', 'transparent'].includes(profile.background)
     || [profile.showGrid, profile.showRoomNumbers, profile.showRoomNames].some(v => typeof v !== 'boolean')
     || !Number.isInteger(profile.pixelsPerCell) || profile.pixelsPerCell < 1 || profile.pixelsPerCell > MAX_PIXELS_PER_CELL

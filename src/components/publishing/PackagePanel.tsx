@@ -67,6 +67,7 @@ export function PackagePanel({ snapshot, settings, onBusy, profile, onProfile }:
     </fieldset>
     {profile.kind !== 'player' && <p role="alert" className="publish-warning">GM専用情報・制作データを含みます。パッケージ全体をプレイヤーへ配布しないでください。</p>}
     <p className="publish-help">マップ・ガイド・印刷・ピース印刷タブの設定を引き継ぎます。生成中は開始時点のデータと設定を保持します。PDF本体は収録せず、印刷用HTMLを収録します。</p>
+    <p>GM用の勢力支配図: {settings.publish.showFactions ? '有効（マップ出力で変更）' : '無効（マップ出力で変更）'}。プレイヤー用には含めません。</p>
     <p>マップ: {settings.publish.pixelsPerCell}px / マス · {settings.publish.showGrid ? 'グリッドあり' : 'グリッドなし'}<br />
       印刷: {settings.print.paperSize} / {settings.print.orientation === 'portrait' ? '縦' : '横'} / {settings.print.map.cellSizeMm}mm<br />
       ピース: {settings.pieces.options.source === 'dungeon' ? 'ダンジョン使用ピース' : settings.pieces.options.source === 'library' ? 'ライブラリ' : '通路素材'}・指定数量を使用</p>

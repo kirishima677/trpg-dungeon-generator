@@ -36,6 +36,7 @@ export function PublishingView({ controller }: { controller: PublicationControll
           const audience = e.target.value as PublishProfile['audience'], defaults = defaultPublishProfile(audience);
           update({ audience, showRoomNumbers: defaults.showRoomNumbers, showRoomNames: defaults.showRoomNames });
         }}><option value="player">プレイヤー用</option><option value="gm">GM用</option></select></label>
+        {view==='map'&&<label className="publish-checkbox"><input type="checkbox" aria-label="勢力支配図を出力" checked={profile.audience==='gm'&&!!profile.showFactions} disabled={profile.audience!=='gm'} onChange={e=>update({showFactions:e.target.checked})} />勢力支配図（GM用のみ）</label>}
         {([['showGrid', 'グリッド'], ['showRoomNumbers', '部屋番号'], ['showRoomNames', '部屋名称']] as const).filter(([key]) => !guideView || key !== 'showRoomNumbers').map(([key, label]) =>
           <label className="publish-checkbox" key={key}><input type="checkbox" checked={profile[key]} onChange={e => update({ [key]: e.target.checked })} />{label}</label>)}
         <label>背景<select value={profile.background} onChange={e => update({ background: e.target.value as PublishProfile['background'] })}>
