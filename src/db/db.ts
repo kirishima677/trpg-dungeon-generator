@@ -1,3 +1,4 @@
+import type { FactionDefinition } from '../model/faction';
 import Dexie, { type Table } from 'dexie';
 import type { DungeonDocument, Piece } from '../model/types';
 import type { ContentDefinition } from '../model/content';
@@ -15,6 +16,7 @@ export class DungeonDB extends Dexie {
   settings!: Table<AppSettings, string>;
   contentDefinitions!: Table<ContentDefinition, string>;
   dungeonThemes!: Table<DungeonTheme, string>;
+  factionDefinitions!: Table<FactionDefinition,string>;
   roomThemes!: Table<RoomTheme, string>;
 
   constructor() {
@@ -27,6 +29,7 @@ export class DungeonDB extends Dexie {
     this.version(2).stores({ contentDefinitions: 'id, kind, name, updatedAt' });
     this.version(3).stores({ dungeonThemes: 'id, name, genre, category, updatedAt' });
     this.version(4).stores({ roomThemes: 'id, name, genre, category, updatedAt' });
+    this.version(5).stores({ factionDefinitions: 'id, name, genre, category, updatedAt' });
   }
 }
 

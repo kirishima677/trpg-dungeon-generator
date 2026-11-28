@@ -1,3 +1,4 @@
+import type {GuideFaction,GuideRoomFaction} from './factionGuide';
 import type { PublishAudience, PublishProfile } from '../publishProfile';
 import type { RoomEntityGuide } from './entityGuide';
 
@@ -24,6 +25,7 @@ export function validateScenarioGuideOptions(options: ScenarioGuideOptions) {
   if (!options || keys.some(key => typeof options[key] !== 'boolean')) throw new Error('シナリオガイドの出力設定が不正です。');
 }
 export interface ScenarioGuideRoom extends RoomEntityGuide {
+  factionControl?:GuideRoomFaction;
   anchorId: string;
   mapRoomId: string;
   number: string;
@@ -34,6 +36,7 @@ export interface ScenarioGuideRoom extends RoomEntityGuide {
 }
 /** Safe content extracted before any Markdown/HTML renderer runs. */
 export interface PublishScenario {
+  factions?:GuideFaction[];
   title: string;
   scenarioMarkdown?: string;
   rooms: ScenarioGuideRoom[];

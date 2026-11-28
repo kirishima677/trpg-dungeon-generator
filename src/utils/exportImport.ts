@@ -54,6 +54,7 @@ export function parseImport(raw: unknown): ExportEnvelope {
     || (dungeon.markdown !== undefined && typeof dungeon.markdown !== 'string')) {
     throw new Error('Invalid dungeon document');
   }
+  if(envelope.schemaVersion===SCHEMA_VERSION&&['factions','factionRelations','roomFactionAssignments'].some(k=>!Array.isArray((dungeon as unknown as Record<string,unknown>)[k])))throw new Error('Faction配列が不足しています。');
   const roomIds = new Set<string>();
   const pieceDefinitions = new Map<string, string>();
   const roomNumbers = new Set<string>();
@@ -64,7 +65,7 @@ export function parseImport(raw: unknown): ExportEnvelope {
       || !room.piece || !Array.isArray(room.piece.cells) || room.piece.cells.length === 0
       || !Array.isArray(room.piece.connectors)) throw new Error('Invalid room');
     roomIds.add(room.id);
-    if (['1.2.0', '1.3.0', '1.4.0', SCHEMA_VERSION].includes(envelope.schemaVersion)) {
+    if (['1.2.0', '1.3.0', '1.4.0', '1.5.0', SCHEMA_VERSION].includes(envelope.schemaVersion)) {
       const error = roomInformationError(room.information, roomNumbers);
       if (error) throw new Error(`Invalid room information: ${error}`);
       roomNumbers.add(room.information!.number.trim());

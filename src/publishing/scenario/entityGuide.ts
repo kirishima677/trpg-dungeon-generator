@@ -1,3 +1,4 @@
+import {factionDisplayName} from '../../model/factionState';
 import { CONTENT_KINDS } from '../../model/content';
 import type { ContentAttributeValue, ContentKind } from '../../model/content';
 import { entityDisplayName, normalizeEntities } from '../../model/entity';
@@ -5,7 +6,7 @@ import type { DungeonDocument } from '../../model/types';
 import type { ScenarioGuideOptions } from './scenarioGuide';
 
 export interface GmGuideEntity {
-  name: string; sourceName: string; quantity: number; summary: string;
+  faction?:string; name: string; sourceName: string; quantity: number; summary: string;
   description?: string; definitionGmNotes?: string; tags: string[];
   attributes: Record<string, ContentAttributeValue>; publicDescription?: string; gmNotes?: string;
 }
@@ -24,7 +25,7 @@ export function buildEntityGuides(source: DungeonDocument, gm: boolean, options:
       const groups = CONTENT_KINDS.flatMap(kind => {
         const entries: GmGuideEntity[] = values.filter(e => e.contentSnapshot.kind === kind).map(entity => {
           const snapshot = entity.contentSnapshot;
-          return { name: text(entityDisplayName(entity)), sourceName: text(snapshot.name), quantity: entity.quantity, summary: text(snapshot.summary),
+          return { ...(entity.factionId?{faction:text(factionDisplayName(source.factions.find(f=>f.id===entity.factionId)!))}:{}),name: text(entityDisplayName(entity)), sourceName: text(snapshot.name), quantity: entity.quantity, summary: text(snapshot.summary),
             tags: snapshot.tags.map(text), attributes: Object.fromEntries(Object.entries(snapshot.attributes).map(([key, value]) => {
               text(key); text(String(value)); return [key, value];
             })),

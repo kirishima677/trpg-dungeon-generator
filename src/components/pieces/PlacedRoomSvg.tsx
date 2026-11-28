@@ -1,3 +1,5 @@
+import {FactionCellOverlay} from '../factions/FactionOverlay';
+import {buildFactionOverlay} from '../../factions/factionOverlay';
 import React, { useCallback, useRef, useState } from 'react';
 import type { PlacedRoom } from '../../model/types';
 import { getWorldCells, getWorldConnectors } from '../../utils/geometry';
@@ -24,6 +26,8 @@ export function PlacedRoomSvg({ room, isSelected, openConnectorIds }: PlacedRoom
   })));
   const { view, roomLabels } = useDungeonStore(useShallow(s => ({ view: s.view, roomLabels: s.roomLabels })));
 
+  const factionState=useDungeonStore(useShallow(s=>({show:s.showFactions,dungeon:s.dungeon})));
+  const factionRooms=factionState.show?buildFactionOverlay({...factionState.dungeon,roomFactionAssignments:factionState.dungeon.roomFactionAssignments.filter(a=>a.roomId===room.id)}).rooms:null;
   const dragging = useRef(false);
   const dragStart = useRef({ mx: 0, my: 0, rx: 0, ry: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -118,6 +122,7 @@ export function PlacedRoomSvg({ room, isSelected, openConnectorIds }: PlacedRoom
         );
       })}
 
+      {factionRooms&&<FactionCellOverlay rooms={factionRooms} />}
       <RoomLabel room={room} cells={cells} visibility={roomLabels} color={strokeColor} />
 
       {/* Connectors */}

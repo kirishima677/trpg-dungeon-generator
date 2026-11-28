@@ -26,3 +26,20 @@
 .room-theme-panel .theme-markdown { padding:10px; background:white; max-height:250px; overflow:auto; }
 .room-theme-panel [role=alert] { color:#b91c1c; }
 .theme-editor .theme-candidates > button { display:block; width:100%; text-align:left; margin:6px 0; }
+
+.faction-settings {max-height:90vh;overflow:auto;min-width:0}
+.faction-settings label {display:block;margin:8px 0}
+.faction-settings textarea {display:block;width:100%;min-height:50px}
+.faction-settings nav {display:flex;flex-wrap:wrap;gap:6px}
+.faction-settings fieldset {border:0;min-width:0}
+
+.room-faction-panel label {display:block;margin:10px 0;overflow-wrap:anywhere}
+.room-faction-panel select,.room-faction-panel textarea {display:block;width:100%;max-width:100%;box-sizing:border-box;margin:5px 0;padding:5px;font:inherit}
+.room-faction-panel fieldset {min-width:0;margin:8px 0;padding:6px}
+.room-faction-panel .faction-contestant {display:flex;align-items:flex-start;gap:5px;line-height:1.5}
+.room-faction-panel input[type=checkbox] {flex:none;margin-top:5px}
+.room-faction-panel button {margin:4px 0;padding:5px}
+.room-faction-panel [role=alert] {color:#b91c1c}
+.room-faction-panel p {margin:8px 0;line-height:1.6}
+.faction-settings nav[aria-label="登録勢力"] {max-height:200px;overflow:auto}
+.faction-settings [role=alertdialog] {padding:16px;background:#f8fafc;border:2px solid #64748b;margin:12px 0}

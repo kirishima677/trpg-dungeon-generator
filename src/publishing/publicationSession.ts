@@ -1,3 +1,5 @@
+import {buildFactionOverlay} from '../factions/factionOverlay';
+import {normalizeFactionState} from '../model/factionState';
 import type { DungeonDocument } from '../model/types';
 import type { PublishAudience, PublishProfile } from './publishProfile';
 import { buildPublishDocument, buildScenarioPublishDocument } from './publishDocumentBuilder';
@@ -51,7 +53,7 @@ export function createPublicationSession(snapshot: DungeonDocument | null, build
     if (!geometries.has(audience)) geometries.set(audience, buildGeometry(buildPublishDocument(requireSource(), audience)));
     return geometries.get(audience)!;
   };
-  const map = (profile: PublishProfile) => mapCache(profile.audience, JSON.stringify(profile), () => renderPublishSvg(geometry(profile.audience), profile));
+  const map = (profile: PublishProfile) => mapCache(profile.audience, JSON.stringify(profile), () => renderPublishSvg(geometry(profile.audience), profile,profile.audience==='gm'&&profile.showFactions?buildFactionOverlay({...requireSource(),...normalizeFactionState(requireSource(),requireSource().rooms,requireSource().entities??[])}):undefined));
   function prepareGuide(profile: PublishProfile, options: ScenarioGuideOptions, title: string) {
     const document = buildScenarioPublishDocument({ ...requireSource(), name: title }, profile, options);
     let svg: ReturnType<typeof renderScenarioMap> | null = null;
@@ -67,7 +69,7 @@ export function createPublicationSession(snapshot: DungeonDocument | null, build
     guideCache(profile.audience, JSON.stringify([profile, options, title]), () => prepareGuide(profile, options, title));
   function prepareMapPrint(profile: PublishProfile, print: PrintProfile, title: string) {
     assertMapCells();
-    const svg = map(profile), layout = buildPrintLayout(svg.bounds, print);
+    const svg = map({...profile,showFactions:undefined}), layout = buildPrintLayout(svg.bounds, print);
     return { map: svg, layout, html: renderMapPrintDocument(svg.svg, layout, print, title, profile.audience) };
   }
   const mapPrint = (profile: PublishProfile, print: PrintProfile, title = source?.name ?? '', pageIndex?: number) => {

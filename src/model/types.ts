@@ -1,3 +1,4 @@
+import type { FactionState } from './factionState';
 import type { EntityInstance } from './entity';
 import type { DungeonThemeAssignment } from './dungeonTheme';
 import type { RoomThemeAssignment } from './roomTheme';
@@ -94,7 +95,7 @@ export interface DungeonMeta {
   background?: string;
 }
 
-export interface DungeonDocument {
+export interface DungeonDocument extends FactionState {
   id: string;
   name: string;
   /** Semantic version string, e.g. "1.0.0" */

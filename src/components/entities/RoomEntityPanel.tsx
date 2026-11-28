@@ -50,7 +50,7 @@ export function RoomEntityPanel({ roomId, repository = contentRepository }: { ro
         </button>)}</section> : null;
       })}
       {entity && <>
-        <EntityEditor key={entity.id} entity={entity} apply={edits => command({ type: 'edit', id: entity.id, edits })} onDirtyChange={setDirty} />
+        <EntityEditor key={entity.id} entity={entity} factions={dungeon.factions} apply={(edits,factionId) => command({ type: 'edit', id: entity.id, edits, factionId })} onDirtyChange={setDirty} />
         {library.ready && !library.error && !latest && <p>元のライブラリ素材は存在しません。配置済みの定義は保持されています。</p>}
         {latest && latest.kind !== entity.contentSnapshot.kind && <p>元の素材の種別が変更されています。更新せず、Entityを再登録してください。</p>}
         <button disabled={dirty || !latest || !!library.error || latest.kind !== entity.contentSnapshot.kind}

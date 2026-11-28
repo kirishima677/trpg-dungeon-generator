@@ -1,3 +1,4 @@
+import {factionDisplayName} from '../../model/factionState';
 import React, { useRef, useCallback, useEffect } from 'react';
 import { GridCanvas } from '../canvas/GridCanvas';
 import { PlacedRoomSvg } from '../pieces/PlacedRoomSvg';
@@ -23,6 +24,8 @@ import { openEditorWindow } from '../../editor/editorWindows';
 import { collectPieceReferences, registerPieceReferenceReader } from '../../editor/pieces/pieceReferences';
 import '../themes/themes.css';
 const DungeonThemePanel = React.lazy(() => import('../themes/DungeonThemePanel').then(m => ({ default: m.DungeonThemePanel })));
+
+const DungeonFactionPanel=React.lazy(()=>import('../factions/DungeonFactionPanel').then(m=>({default:m.DungeonFactionPanel})));
 
 export function Editor() {
   const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom,
@@ -58,6 +61,8 @@ export function Editor() {
   const currentDungeonIdRef = useRef(dungeon.id);
   const [referenceReady, setReferenceReady] = React.useState(false);
   const [windowError, setWindowError] = React.useState('');
+  const showFactions=useDungeonStore(s=>s.showFactions);
+  const [factionOpen,setFactionOpen]=React.useState(false);
   const [themeOpen, setThemeOpen] = React.useState(false);
 
   useEffect(() => {
@@ -156,12 +161,12 @@ export function Editor() {
   }, []);
 
   return (
-    <><div inert={!referenceReady || themeOpen} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <><div inert={!referenceReady || themeOpen || factionOpen} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Menu bar */}
       <MenuBar />
 
       {/* Toolbar */}
-      <Toolbar onOpenPublishing={() => {
+      <Toolbar onOpenFactionSettings={()=>{cancelConnection();setFactionOpen(true);}} onOpenFactionEditor={()=>{const opened=openEditorWindow('faction-editor-window',{factionEditor:'1'},'popup=yes,width=1200,height=850');setWindowError(opened?'':'Faction管理を開けませんでした。ポップアップを許可してください。');}} onOpenPublishing={() => {
         try {
           const current = useDungeonStore.getState().dungeon;
           const provider = publishingProvider.current, request = ++publishRequest.current;
@@ -203,6 +208,7 @@ export function Editor() {
           style={{ flex: 1, overflow: 'hidden', background: '#e2e8f0' }}
           onClick={onCanvasClick}
         >
+          {showFactions&&<aside aria-label="勢力の凡例" style={{position:'absolute',zIndex:2,background:'#ffffffed',padding:8,pointerEvents:'none',maxWidth:400,fontSize:12}}>勢力支配 / 係争: 複数色 / 無所属: 通常色{dungeon.factions.map(f=><div key={f.id}><span style={{color:f.mapColor}}>■ </span>{factionDisplayName(f)}</div>)}</aside>}
           <GridCanvas width={size.w} height={size.h} svgRef={svgRef}>
             <ConnectionRenderer scene={connectionScene} layer="corridors" />
             {/* Rendered rooms */}
@@ -226,6 +232,6 @@ export function Editor() {
         {/* Right: properties */}
         <PropertiesPanel />
       </div>
-    </div>{themeOpen && <React.Suspense fallback={<div role="status">テーマ設定を読み込んでいます…</div>}><DungeonThemePanel key={dungeon.id} close={() => setThemeOpen(false)} /></React.Suspense>}</>
+    </div>{factionOpen&&<React.Suspense fallback={<p>勢力設定を読み込んでいます…</p>}><DungeonFactionPanel key={dungeon.id} close={()=>setFactionOpen(false)} /></React.Suspense>}{themeOpen && <React.Suspense fallback={<div role="status">テーマ設定を読み込んでいます…</div>}><DungeonThemePanel key={dungeon.id} close={() => setThemeOpen(false)} /></React.Suspense>}</>
   );
 }

@@ -17,13 +17,22 @@ export const dungeonRepository = {
       const rooms = dungeon.version === SCHEMA_VERSION ? dungeon.rooms : dungeon.rooms.map(room => Object.hasOwn(room, 'roomTheme') ? room : {
         ...room, roomTheme: existing?.rooms.find(r => r.id === room.id)?.roomTheme,
       });
-      const normalized = normalizeDungeonDocument({ ...dungeon, rooms, entities: dungeon.entities ?? existing?.entities ?? [], theme });
+      const legacy=dungeon.version!==SCHEMA_VERSION;
+      const previousEntities=new Map(existing?.entities?.map(e=>[e.id,e]));
+      const entities=(dungeon.entities??existing?.entities??[]).map(e=>{
+        const previous=previousEntities.get(e.id);
+        return legacy&&!Object.hasOwn(e,'factionId')&&previous?.factionId?{...e,factionId:previous.factionId}:e;
+      });
+      const normalized = normalizeDungeonDocument({ ...dungeon, rooms, entities, theme,
+        factions:dungeon.factions===undefined&&legacy?existing?.factions:dungeon.factions,factionRelations:dungeon.factionRelations===undefined&&legacy?existing?.factionRelations:dungeon.factionRelations,
+        roomFactionAssignments:dungeon.roomFactionAssignments===undefined&&legacy?existing?.roomFactionAssignments?.filter(a=>rooms.some(r=>r.id===a.roomId)):dungeon.roomFactionAssignments });
       if (existing) await db.dungeons.update(normalized.id, {
         name: normalized.name,
         version: normalized.version,
         rooms: normalized.rooms,
         connections: normalized.connections,
         entities: normalized.entities,
+        factions:normalized.factions,factionRelations:normalized.factionRelations,roomFactionAssignments:normalized.roomFactionAssignments,
         theme: normalized.theme,
         meta: normalized.meta,
         updatedAt: normalized.updatedAt,

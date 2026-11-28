@@ -7,7 +7,7 @@ export interface RoomThemeEntityOrigin { type: 'room-theme-required'; sourceRoom
 export interface EntityInstance {
   id: string; roomId: string; sourceContentId: string; contentSnapshot: ContentDefinition;
   quantity: number; customName: string; publicDescription: string; gmNotes: string; visibility: EntityVisibility;
-  origin?: RoomThemeEntityOrigin;
+  origin?: RoomThemeEntityOrigin; factionId?:string;
 }
 export type EntityEdits = Pick<EntityInstance, 'quantity' | 'customName' | 'publicDescription' | 'gmNotes' | 'visibility'>;
 export const ENTITY_LIMITS = { perRoom: 50, total: 500, quantity: 1_000_000, name: 200, markdown: 20_000,
@@ -45,7 +45,9 @@ export function normalizeEntity(value: unknown, roomIds: ReadonlySet<string>): E
     if (o.type !== 'room-theme-required') throw new Error('Entityの由来種別が不正です。');
     origin = { type: o.type, sourceRoomThemeId: string(o.sourceRoomThemeId, '由来Theme ID', 128, true), requiredEntryId: string(o.requiredEntryId, '必須構成項目ID', 128, true) };
   }
-  return { id, roomId, sourceContentId, contentSnapshot, ...normalizeEntityEdits(raw), ...(origin ? { origin } : {}) };
+  const factionId=raw.factionId===undefined?undefined:string(raw.factionId,'所属勢力ID',128,true);
+  if(factionId&&!['monster','npc'].includes(contentSnapshot.kind))throw new Error('勢力への所属はMonsterまたはNPCのみです。');
+  return { id, roomId, sourceContentId, contentSnapshot, ...(factionId?{factionId}:{}), ...normalizeEntityEdits(raw), ...(origin ? { origin } : {}) };
 }
 export function checkEntityLimits(entities: readonly EntityInstance[]) {
   if (entities.length > ENTITY_LIMITS.total) throw new Error(`Entityはダンジョン全体で${ENTITY_LIMITS.total}件までです。`);
@@ -78,7 +80,7 @@ export const entityDisplayName = (entity: EntityInstance) => entity.customName.t
 
 export type EntityCommand =
   | { type: 'add'; roomId: string; content: ContentDefinition; quantity: number }
-  | { type: 'edit'; id: string; edits: EntityEdits }
+  | { type: 'edit'; id: string; edits: EntityEdits; factionId?:string|null }
   | { type: 'duplicate'; id: string }
   | { type: 'move'; id: string; roomId: string }
   | { type: 'delete'; id: string }
@@ -103,8 +105,12 @@ export function applyEntityCommand(entities: readonly EntityInstance[], rooms: r
       const { origin: _origin, ...moved } = entity;
       const next = { ...(command.type === 'move' ? moved : entity), ...(command.type === 'edit' ? normalizeEntityEdits(command.edits)
         : command.type === 'move' ? { roomId: string(command.roomId, '所属部屋ID', 128, true) } : { contentSnapshot: snapshot(command.content) }) };
-      if (JSON.stringify(next) === JSON.stringify(entity)) return null;
-      result = entities.map(e => e.id === entity.id ? next : e);
+      if(command.type==='edit'&&command.factionId!==undefined) {
+        if(command.factionId===null)delete next.factionId;else next.factionId=command.factionId;
+      }
+      const validated=normalizeEntity(next,new Set(rooms.map(r=>r.id)));
+      if (JSON.stringify(validated) === JSON.stringify(entity)) return null;
+      result = entities.map(e => e.id === entity.id ? {...validated,contentSnapshot:next.contentSnapshot} : e);
     }
   }
   checkEntityLimits(result); return result;

@@ -19,7 +19,7 @@ export interface PackageSettings { publish: PublishProfile; guides: Record<Publi
 export function packagePublishProfile(base: PublishProfile, audience: PublishAudience): PublishProfile {
   validatePublishProfile(base);
   // A package has no room-level public-name approval. Player artifacts always omit room names.
-  return { ...base, audience, showRoomNames: audience === 'gm' && (base.audience !== 'gm' || base.showRoomNames),
+  return { ...base,...(base.showFactions!==undefined?{showFactions:audience==='gm'&&base.showFactions}:{}), audience, showRoomNames: audience === 'gm' && (base.audience !== 'gm' || base.showRoomNames),
     showRoomNumbers: audience === base.audience ? base.showRoomNumbers : audience === 'gm' };
 }
 /** Generators receive a captured snapshot and return data; none download files or open print windows. */

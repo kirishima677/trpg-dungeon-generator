@@ -74,7 +74,7 @@ Routing層とRendererは分離しています。経路は保存データに追�
 - 接続口が塞がれている場合や探索上限に達した場合は、接続を保持して赤い警告経路を表示する
 - 赤い経路は通行可能な経路ではなく接続関係の表示。線の説明で失敗理由を確認でき、配置を変えると自動復旧する
 
-占有グリッド・経路・探索状態は保存しません。現在の保存形式 `1.5.0` でも既存データの互換性を維持します。
+占有グリッド・経路・探索状態は保存しません。現在の保存形式 `1.6.0` でも既存データの互換性を維持します。
 探索範囲とノード数には上限があります。具体値と検証内容は [障害物回避実装メモ](docs/obstacle-routing.md) を参照してください。
 
 ![Obstacle Routing](docs/images/obstacle-routing.jpg)
@@ -146,7 +146,7 @@ Routing層とRendererは分離しています。経路は保存データに追�
 - 別ウィンドウの更新は通知し、未保存の編集を保護する。同じデータの保存・削除競合は上書きせずエラーにする
 
 コンテンツはダンジョンから独立したGM用ライブラリです。部屋へ配置する際は、その時点の定義をEntityへコピーして保持します。
-DBバージョン4で独立したライブラリを管理し、既存のダンジョン・ピース・Markdown・設定を保持します。
+DBバージョン5で独立したライブラリを管理し、既存のダンジョン・ピース・Markdown・設定を保持します。
 操作・データモデル・JSON形式・制限・検証結果は [コンテンツライブラリ実装メモ](docs/content-library.md) を参照してください。
 
 ![Content Editor](docs/images/content-editor.jpg)
@@ -163,7 +163,7 @@ DBバージョン4で独立したライブラリを管理し、既存のダン�
 - シナリオ印刷とZIPにも同じ公開範囲を適用する。マップ・ピースシート・必要数量にはEntityを加算しない
 
 Entityの初期公開範囲はGM専用です。数量や名称をプレイヤーに知らせる場合は、配置の公開説明へ明示的に記述してください。
-保存形式は1.5.0です。1.0.0〜1.2.0はEntity一覧を空として読み込めます。
+保存形式は1.6.0です。1.0.0〜1.2.0はEntity一覧を空として読み込めます。
 構成・操作・公開情報の抽出・制限・検証結果は [部屋へのEntity関連付け実装メモ](docs/room-entities.md) を参照してください。
 
 ![Room Entities](docs/images/room-entities.jpg)
@@ -180,7 +180,7 @@ Entityの初期公開範囲はGM専用です。数量や名称をプレイヤー
 - Player成果物やGMガイドにテーマ情報を載せず、CompleteのプロジェクトJSONへ適用定義を保存する
 
 テーマは制作方針で、手動素材選択を制限しません。候補素材自体は固定せず、現在のライブラリによって変わります。
-DB v4とDungeon JSON 1.5.0へ更新し、旧データを維持します。
+DB v5とDungeon JSON 1.6.0へ更新し、旧データを維持します。
 操作・評価順序・スナップショット・互換性・上限・検証結果は [Dungeon Theme実装メモ](docs/dungeon-themes.md) を参照してください。
 
 ![Dungeon Theme](docs/images/dungeon-themes.jpg)
@@ -201,6 +201,24 @@ Room Themeの制作情報はGM/Playerガイドへ自動掲載しません。生�
 構成・操作・上限・互換性・検証結果は [Room Theme実装メモ](docs/room-themes.md) を参照してください。
 
 ![Required Content Placement](docs/images/room-theme-required-placement.jpg)
+
+### Faction管理・勢力分布
+
+- 「Faction管理」で再利用できる勢力定義とMonster／NPC・推奨Room Theme候補を編集する
+- Dungeon Themeの「Faction候補」と組み合わせて候補を確認する。候補は手動配置を制限しない
+- 「勢力設定」でダンジョン内の独立した勢力を登録し、同盟・敵対などの対称関係と個別情報を管理する
+- 部屋の「勢力」タブで無所属／単独支配／係争中を設定する。一括支配設定は上書き予定を確認して確定する
+- MonsterとNPCの「所属勢力」を部屋の支配とは独立して指定する。部屋・Entityの複製や移動にも追従する
+- 「勢力支配」で実際の床セルに色を重ね、係争地を複数色で表示する。凡例・グリッド・選択表示を維持する
+- 削除は影響を確認して関連参照をまとめて解除し、Undoで復元できる。部屋・Entityは削除しない
+- GMガイドに登録済み勢力・支配・所属を掲載し、GMマップに任意の支配図を出力する
+- プレイヤーには公開指定した公開名称・公開説明だけを渡す。マップ・PNG・ZIPへ支配図を含めない
+
+定義はDB v5の専用ライブラリ、勢力・関係・支配・所属はDungeon JSON 1.6.0に保存します。
+適用時点のスナップショットを維持し、元定義の変更は明示的に反映します。
+操作・モデル・上限・互換性・検証結果は [Faction実装メモ](docs/factions.md) を参照してください。
+
+![Faction Overlay](docs/images/faction-overlay.jpg)
 
 ### 部屋番号・部屋情報
 
@@ -229,7 +247,7 @@ JSONはGM専用情報も含む完全なプロジェクトデータです。プ�
 - 未解決の接続がある場合は警告し、「この状態で出力する」を選ぶまで出力を停止する
 - PNGは一辺8,192px・合計16,777,216画素まで。解像度は1マス1〜512px、初期値64px
 
-出版操作でダンジョンを自動保存せず、履歴・ピースライブラリ・JSON形式1.5.0を維持します。
+出版操作でダンジョンを自動保存せず、履歴・ピースライブラリ・JSON形式1.6.0を維持します。
 操作方法・情報分離・制限・検証結果は [出版システム実装メモ](docs/publishing.md) を参照してください。
 
 ![Publishing](docs/images/publishing-gm.jpg)
@@ -306,7 +324,7 @@ Dexie + IndexedDB を使用してブラウザローカルに保存します。
 ### Export / Import
 JSON形式でエクスポート・インポートが可能です。
 フォーマット識別子 `trpg-dungeon-generator` とスキーマバージョンを含みます。
-現在のスキーマは `1.5.0` で、接続情報・部屋情報・Entityと配置時点のコンテンツ定義・Dungeon/Room Themeスナップショット・Entity由来も含みます。従来の `1.0.0` / `1.1.0` / `1.2.0` / `1.3.0` / `1.4.0` を読み込み可能です。
+現在のスキーマは `1.6.0` で、接続情報・部屋情報・Entityと配置時点のコンテンツ定義・Dungeon/Room Themeスナップショット・Entity由来・勢力のスナップショット・関係・支配・所属も含みます。従来の `1.0.0` / `1.1.0` / `1.2.0` / `1.3.0` / `1.4.0` / `1.5.0` を読み込み可能です。
 接続情報のない旧データは空の接続一覧として読み込みます。
 旧 `PlacedRoom.connections` に接続がある場合はドキュメント単位の接続へ移行し、
 部屋単位のマップは除去します。詳細は [コネクター実装メモ](docs/connector-system.md) を参照してください。
@@ -342,6 +360,7 @@ src/
   model/          - TypeScript型定義・ピースライブラリ
   content/        - コンテンツの入力変換・検索・JSON入出力・更新通知
   themes/         - テーマの入力変換・検索・JSON入出力・更新通知
+  factions/       - 勢力の入力変換・JSON入出力・更新通知・支配図
   store/          - Zustand状態管理（Undo/Redo）
   db/             - Dexie DBセットアップ
   repository/     - データアクセス層
@@ -432,6 +451,9 @@ interface DungeonDocument {
   rooms: PlacedRoom[];
   connections: Connection[];
   entities: EntityInstance[];
+  factions: FactionInstance[];
+  factionRelations: FactionRelation[];
+  roomFactionAssignments: RoomFactionAssignment[];
   theme?: DungeonThemeAssignment;
   markdown: string;
   meta: DungeonMeta;

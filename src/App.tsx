@@ -9,8 +9,11 @@ const ContentEditorWindow = lazy(() => import('./components/content/ContentEdito
 const ThemeEditorWindow = lazy(() => import('./components/themes/ThemeEditorWindow').then(m => ({ default: m.ThemeEditorWindow })));
 const RoomThemeEditorWindow = lazy(() => import('./components/themes/RoomThemeEditorWindow').then(m => ({ default: m.RoomThemeEditorWindow })));
 
+const FactionEditorWindow=lazy(()=>import('./components/factions/FactionEditorWindow').then(m=>({default:m.FactionEditorWindow})));
+
 function App() {
   const params = new URLSearchParams(window.location.search);
+  if(params.get('factionEditor')==='1')return <WindowLoader name="Faction管理"><FactionEditorWindow /></WindowLoader>;
   if (params.get('publishing') === '1') return <WindowLoader name="出版画面"><PublishingWindow /></WindowLoader>;
   if (params.get('pieceEditor') === '1') return <WindowLoader name="ピースエディタ"><PieceEditorWindow /></WindowLoader>;
   if (params.get('markdownEditor') === '1') return <WindowLoader name="Markdownエディタ"><MarkdownEditorWindow /></WindowLoader>;

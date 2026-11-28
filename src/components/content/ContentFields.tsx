@@ -3,8 +3,8 @@ import type { AttributeRow } from '../../content/contentForm';
 import { CONTENT_LIMITS } from '../../model/content';
 import { renderMarkdownToHtml } from '../../editor/markdown/markdownRender';
 
-export function ContentMarkdown({ description, gmNotes, onChange, prefix = '', maxLength = CONTENT_LIMITS.markdown, descriptionLabel = '公開説明', notesLabel = 'GM専用情報' }: {
-  description: string; gmNotes: string; onChange: (field: 'description' | 'gmNotes', value: string) => void;
+export function ContentMarkdown({ description, gmNotes, onChange, prefix = '', maxLength = CONTENT_LIMITS.markdown, descriptionLabel = '公開説明', notesLabel = 'GM専用情報',readOnly=false }: {
+  description: string; gmNotes: string; onChange?: (field: 'description' | 'gmNotes', value: string) => void; readOnly?:boolean;
   prefix?: string; maxLength?: number;
   descriptionLabel?: string; notesLabel?: string;
 }) {
@@ -16,8 +16,8 @@ export function ContentMarkdown({ description, gmNotes, onChange, prefix = '', m
     <nav aria-label="説明の種類"><button type="button" aria-pressed={field === 'description'} onClick={() => setField('description')}>{descriptionLabel}</button>
       <button type="button" aria-pressed={field === 'gmNotes'} onClick={() => setField('gmNotes')}>{notesLabel}</button></nav>
     <div className="content-markdown">
-      <label>{label}（Markdown）<textarea aria-label={`${label}（Markdown）`} value={value} maxLength={maxLength}
-        onChange={e => onChange(field, e.target.value)} /></label>
+      <label>{label}（Markdown）<textarea aria-label={`${label}（Markdown）`} value={value} maxLength={maxLength} readOnly={readOnly}
+        onChange={e => onChange?.(field, e.target.value)} /></label>
       <section className="content-preview" aria-label={`${label}のプレビュー`} dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   </section>;
