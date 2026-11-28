@@ -12,10 +12,10 @@ import {encounterContextFixture,encounterPlanFixture} from './fixtures/encounter
 import {applyEncounterPlan} from '../src/model/encounter/application';
 beforeEach(async()=>{await db.dungeons.clear();});after(async()=>{await db.delete();});
 test('strict validation, Export and persistence reject duplicate Room IDs and invalid connections without partial writes',async()=>{
- const good=assertDungeonDocument(entityDungeon());await dungeonRepository.save(good);
+ const good=assertDungeonDocument(entityDungeon());await dungeonRepository.save(good);useDungeonStore.getState().setDungeon(good);
  for(const change of [(d:typeof good)=>d.rooms.push({...structuredClone(d.rooms[0]),information:{...d.rooms[0].information,number:'03'}}),(d:typeof good)=>{d.connections[0].toRoomId='absent';},(d:typeof good)=>d.connections.push({...d.connections[0],id:'duplicate-endpoint'})]){
   const bad=structuredClone(good);change(bad);const result=validateDungeonDocument(bad);assert.equal(result.valid,false);assert.ok(result.diagnostics.every(d=>d.severity==='error'));
-  assert.throws(()=>buildExportEnvelope(bad));await assert.rejects(dungeonRepository.save(bad));assert.deepEqual(await dungeonRepository.load(good.id),good);
+  const before=useDungeonStore.getState();assert.throws(()=>before.setDungeon(bad));assert.strictEqual(useDungeonStore.getState().dungeon,before.dungeon);assert.strictEqual(useDungeonStore.getState().undoStack,before.undoStack);assert.throws(()=>buildExportEnvelope(bad));await assert.rejects(dungeonRepository.save(bad));assert.deepEqual(await dungeonRepository.load(good.id),good);
  }
  await assert.rejects(dungeonRepository.saveAll([good,{...good,id:'bad',rooms:[good.rooms[0],good.rooms[0]]}]));assert.equal(await db.dungeons.count(),1);
 });
