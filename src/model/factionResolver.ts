@@ -1,3 +1,4 @@
+import {intersectById} from './selectionSets';
 import type { FactionDraft } from './faction';
 import type { DungeonTheme } from './dungeonTheme';
 import type { RoomTheme } from './roomTheme';
@@ -11,13 +12,13 @@ export function resolveFaction(faction:FactionDraft,contents:readonly ContentDef
   const restrictions=[dungeonTheme,roomTheme].filter((t):t is DungeonTheme|RoomTheme=>!!t).map(t=>resolveContentSelection(t.contentSelection,contents));
   for(const r of restrictions)warnings.push(...r.warnings.map(w=>w.message));
   const members=Object.fromEntries((['monster','npc'] as const).map(kind=>{
-    const candidates=base.candidates[kind].filter(c=>restrictions.every(r=>r.candidates[kind].some(v=>v.id===c.id)));
+    const candidates=intersectById(base.candidates[kind],restrictions.map(r=>r.candidates[kind]));
     if(base.candidates[kind].length&&!candidates.length)warnings.push(`${kind}: テーマとの共通候補がありません。`);return [kind,candidates];
   })) as Record<'monster'|'npc',ContentDefinition[]>;
   const preferred=resolveRoomThemeSelection(faction.roomThemeSelection,roomThemes);warnings.push(...preferred.warnings.map(w=>w.message));
   const allowed=dungeonTheme?resolveRoomThemeSelection(dungeonTheme.roomThemeSelection,roomThemes):null;
   if(allowed)warnings.push(...allowed.warnings.map(w=>w.message));
-  const themes=preferred.candidates.filter(t=>!allowed||allowed.candidates.some(v=>v.id===t.id));
+  const themes=intersectById(preferred.candidates,allowed?[allowed.candidates]:[]);
   if(preferred.candidates.length&&!themes.length)warnings.push('Dungeon Themeとの共通Room Theme候補がありません。');
   if(dungeonTheme&&!resolveFactionSelection(dungeonTheme.factionSelection,[faction]).candidates.length)warnings.push('この勢力はDungeon ThemeのFaction候補外です。手動での登録・利用は可能です。');
   return {members,roomThemes:themes,warnings:[...new Set(warnings)].sort()};

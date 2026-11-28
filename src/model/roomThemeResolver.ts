@@ -1,3 +1,4 @@
+import {intersectById} from './selectionSets';
 import type { Piece, PlacedRoom, Rotation } from './types';
 import type { DungeonTheme } from './dungeonTheme';
 import type { RoomThemeDraft, RoomPieceConstraints, RequiredContentEntry } from './roomTheme';
@@ -36,8 +37,7 @@ export function resolveRoomTheme({ dungeonTheme: dungeon, roomTheme: room, piece
   const dContents = resolveContentSelection(dungeon?.contentSelection ?? allContent, contents), rContents = resolveContentSelection(room?.contentSelection ?? allContent, contents);
   for (const [scope, results, active] of [['dungeon',[dPieces,dContents],dungeon],['room',[rPieces,rContents],room]] as const)
     if (active) for (const result of results) warnings.push(...result.warnings.map(w => ({ ...w, scope })));
-  const dungeonIds = new Set(dPieces.candidates.map(p => p.id));
-  const common = rPieces.candidates.filter(p => dungeonIds.has(p.id)), pieceCandidates: ResolvedPieceCandidate[] = [];
+  const common = intersectById(rPieces.candidates,[dPieces.candidates]), pieceCandidates: ResolvedPieceCandidate[] = [];
   for (const piece of common) {
     const rotations = ([0,90,180,270] as Rotation[]).filter(rotation => !room || evaluateRoomPiece(piece, room.pieceConstraints, rotation).matches);
     if (rotations.length) pieceCandidates.push({ piece, rotations });
@@ -46,8 +46,7 @@ export function resolveRoomTheme({ dungeonTheme: dungeon, roomTheme: room, piece
   if (!pieceCandidates.length) warnings.push({ scope:'combined',code:'empty-pieces',message:'統合したPiece候補がありません。' });
   const contentCandidates = {} as Record<ContentKind,ContentDefinition[]>;
   for (const kind of CONTENT_KINDS) {
-    const ids = new Set(dContents.candidates[kind].map(c => c.id));
-    contentCandidates[kind] = rContents.candidates[kind].filter(c => ids.has(c.id));
+    contentCandidates[kind] = intersectById(rContents.candidates[kind],[dContents.candidates[kind]]);
     if (dungeon && room && !contentCandidates[kind].length && (dContents.candidates[kind].length || rContents.candidates[kind].length))
       warnings.push({ scope:'combined', code:'empty-intersection', kind, message:`${kind}の統合候補は空です。全素材への置き換えは行いません。` });
   }

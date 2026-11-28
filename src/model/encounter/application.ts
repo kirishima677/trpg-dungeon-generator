@@ -17,7 +17,7 @@ export function encounterRevision(context:EncounterContext,template:EncounterTem
  let hash=0xcbf29ce484222325n;for(let i=0;i<json.length;i++)hash=BigInt.asUintN(64,(hash^BigInt(json.charCodeAt(i)))*0x100000001b3n);return hash.toString(16);
 }
 export function prepareEncounterPlan(templateValue:EncounterTemplate,context:EncounterContext,bindings:readonly FactionRoleBinding[],choices:readonly EncounterEntryChoice[],acceptWarnings=false):EncounterApplicationPlan {
- const template=normalizeEncounterTemplate(templateValue),result=resolveEncounter(template,context,bindings),errors=[...result.errors],warnings=result.warnings.filter(w=>!w.includes('共通Content候補がありません')&&!w.includes('使用する設定ですが候補がありません')),entries:EncounterEntryPlan[]=[];
+ const template=normalizeEncounterTemplate(templateValue),result=resolveEncounter(template,context,bindings),errors=[...result.errors],warnings=result.diagnostics.filter(d=>d.severity==='warning'&&d.code!=='entry-empty-candidates'&&d.code!=='selection-empty-candidates').map(d=>d.message),entries:EncounterEntryPlan[]=[];
  if(new Set(choices.map(e=>e.entryId)).size!==choices.length||choices.some(c=>!template.entries.some(e=>e.id===c.entryId)))errors.push('Entry選択のIDが重複または不正です。');
  for(const item of result.entries){const entry=item.entry,choice=choices.find(c=>c.entryId===entry.id);if(!choice?.included){if(entry.required)errors.push(`必須Entry「${entry.label}」を採用してください。`);continue;}
   const content=item.choices.find(c=>c.id===choice.contentId);if(!content){errors.push(`${entry.label}: Contentが未解決または種別不一致です。`);continue;}
