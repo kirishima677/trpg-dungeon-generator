@@ -8,6 +8,17 @@ TRPGのダンジョン自動生成＋編集ツール（MVP実装）
 
 React + TypeScript + Vite で構築した、ブラウザ上で動作するダンジョン編集ツールです。
 
+## 技術監査・自動生成基盤の準備
+
+Phase 2.5で保存・出力時の全体検証、Snapshotの独立コピー、UIに依存しない部屋生成・複合操作、Encounterの診断コード、ライブラリ保存手順を整理しました。保存形式（Dungeon JSON 1.7.0／DB v6）と既存制作機能を維持しています。
+
+- [監査結果・修正・検証・制約](docs/phase-2-5/results.md)
+- [現行アーキテクチャと参照整合性](docs/phase-2-5/architecture.md)
+- [Generatorから利用できるAPIと使用例](docs/phase-2-5/interfaces.md)
+- [前後の性能計測](docs/phase-2-5/performance.md)
+
+自動生成アルゴリズム・乱数シード・重み付き抽選は次期開発の対象です。
+
 ## 機能
 
 ### キャンバス

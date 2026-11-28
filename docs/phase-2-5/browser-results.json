@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-28",
+  "libraryCreates": 5,
+  "workflow": {
+    "rooms": 5,
+    "connections": 1,
+    "entities": 13,
+    "encounters": 4,
+    "factions": 5,
+    "encounterOrigins": 6
+  },
+  "playerZipFiles": 5,
+  "completeZipFiles": 19,
+  "playerLeaks": 0,
+  "consoleErrors": 0,
+  "restored": {
+    "rooms": 4,
+    "connections": 0,
+    "encounters": 3,
+    "entities": 10,
+    "factions": 4
+  },
+  "notes": [
+    "Browser workflow reused previous test libraries and added one new record per library.",
+    "Temporary dungeon changes were undone before saving and reloading the original test dungeon.",
+    "Empty-library restoration and fresh full fixture workflow were verified in non-UI automated tests, not browser file upload."
+  ]
+}

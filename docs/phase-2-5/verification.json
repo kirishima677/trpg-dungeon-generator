@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-28",
+  "baselineTests": 757,
+  "finalTests": 775,
+  "pass": 775,
+  "fail": 0,
+  "skipped": 0,
+  "added": 18,
+  "removed": 0,
+  "merged": 0,
+  "durationMs": 3454.600083,
+  "commands": {
+    "npm test": "passed",
+    "npm run build": "passed (tsc -b + vite build)",
+    "npm run lint": "passed, no warnings",
+    "git diff --check": "passed"
+  },
+  "schemasChanged": false,
+  "dependenciesAdded": false
+}

@@ -1,5 +1,7 @@
 # Encounter Template管理システム
 
+> Phase 2.5で共通保存処理とDocument検証の境界を整理しました。機能追加時点の記録は以下に残し、現行の構成・制約は[アーキテクチャ](phase-2-5/architecture.md)と[監査結果](phase-2-5/results.md)を参照してください。
+
 実装日: 2026-11-28。Dungeon JSON **1.7.0** / IndexedDB **v6**。
 
 ## 操作
@@ -35,7 +37,7 @@ Instanceは定義の深いコピーを持ちます。ライブラリの変更・
 
 ## 適用条件とResolver
 
-`model/encounter/resolver.ts`はDB・UI・乱数に依存しません。共通Selection ResolverとFaction Resolverを再利用します。4モードは既存どおりall／filtered／explicit／noneで、除外・タグ条件・未解決参照も保持します。
+`model/encounter/resolver.ts`はDB・UI・乱数に依存しません。Phase 2.5で`diagnostics`（code／severity／category／対象ID）を追加し、既存の文字列診断も維持しています。共通Selection ResolverとFaction Resolverを再利用します。4モードは既存どおりall／filtered／explicit／noneで、除外・タグ条件・未解決参照も保持します。
 
 - Dungeon Theme／Room Themeの適用条件は、その部屋に保存されたSnapshotで評価します。テーマ未設定は制約のないallだけに適合します。
 - Dungeon Theme／Room ThemeのEncounter候補も両方評価します。新規方針はnone、旧定義・旧Snapshotの未指定方針はallです。

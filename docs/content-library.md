@@ -1,5 +1,7 @@
 # Entity・コンテンツライブラリ管理 MVP
 
+> Phase 2.5で共通保存処理とDocument検証の境界を整理しました。機能追加時点の記録は以下に残し、現行の構成・制約は[アーキテクチャ](phase-2-5/architecture.md)と[監査結果](phase-2-5/results.md)を参照してください。
+
 ## 実装範囲
 
 master `d1441e8`を基点に、再利用可能なContent Definitionの管理を追加した。Piece、PlacedRoom、RoomInformation、DungeonDocument、出版処理との責務を分離し、コンテンツをダンジョンへ埋め込まない。

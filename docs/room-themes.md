@@ -1,5 +1,7 @@
 # Room Theme管理
 
+> Phase 2.5で共通保存処理とDocument検証の境界を整理しました。機能追加時点の記録は以下に残し、現行の構成・制約は[アーキテクチャ](phase-2-5/architecture.md)と[監査結果](phase-2-5/results.md)を参照してください。
+
 ## 変更の範囲
 
 個別の部屋の用途・構成知識・素材候補・物理条件・必須設備を、再利用可能なRoom Themeとして管理できるようにした。Dungeon Themeはダンジョン全体の方針、Room Themeは部屋の用途、Pieceは物理形状、Entityは実際の配置状態を担う。
