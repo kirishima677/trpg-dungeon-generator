@@ -1,0 +1,280 @@
+{
+  "node": "v26.13.1",
+  "platform": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M4 Max",
+  "moduleLoadMs": 43.74512500000003,
+  "method": "one warmup, five samples, median; Store actions include reset; ZIP excludes PNG and includes real SVG/HTML/ZIP compression; HTML excludes map",
+  "output": [
+    {
+      "rooms": 10,
+      "entities": 30,
+      "encounters": 5,
+      "jsonBytes": 70000,
+      "documentBytes": 69888,
+      "estimated50HistoryBytes": 3494400,
+      "timings": {
+        "normalize": {
+          "medianMs": 0.485,
+          "minMs": 0.455,
+          "maxMs": 0.514
+        },
+        "storeLoad": {
+          "medianMs": 0.523,
+          "minMs": 0.473,
+          "maxMs": 0.573
+        },
+        "addRoom": {
+          "medianMs": 0.869,
+          "minMs": 0.847,
+          "maxMs": 1.024
+        },
+        "moveRotate": {
+          "medianMs": 1.189,
+          "minMs": 1.161,
+          "maxMs": 1.227
+        },
+        "routeCold": {
+          "medianMs": 0.209,
+          "minMs": 0.174,
+          "maxMs": 0.303
+        },
+        "routeCached": {
+          "medianMs": 0.007,
+          "minMs": 0.007,
+          "maxMs": 0.011
+        },
+        "entityBatch": {
+          "medianMs": 0.088,
+          "minMs": 0.086,
+          "maxMs": 0.115
+        },
+        "roomTheme": {
+          "medianMs": 0.08,
+          "minMs": 0.049,
+          "maxMs": 0.095
+        },
+        "faction": {
+          "medianMs": 0.035,
+          "minMs": 0.024,
+          "maxMs": 0.038
+        },
+        "encounter": {
+          "medianMs": 0.082,
+          "minMs": 0.066,
+          "maxMs": 0.094
+        },
+        "encounterRevision": {
+          "medianMs": 0.478,
+          "minMs": 0.304,
+          "maxMs": 0.563
+        },
+        "jsonExport": {
+          "medianMs": 0.75,
+          "minMs": 0.74,
+          "maxMs": 0.82
+        },
+        "jsonImport": {
+          "medianMs": 1.593,
+          "minMs": 1.562,
+          "maxMs": 1.848
+        },
+        "gmHTML": {
+          "medianMs": 3.937,
+          "minMs": 2.976,
+          "maxMs": 5.187
+        },
+        "playerZIP": {
+          "medianMs": 45.99,
+          "minMs": 44.625,
+          "maxMs": 48.122
+        },
+        "undoRedo": {
+          "medianMs": 1.034,
+          "minMs": 0.986,
+          "maxMs": 1.082
+        }
+      }
+    },
+    {
+      "rooms": 50,
+      "entities": 250,
+      "encounters": 30,
+      "jsonBytes": 406161,
+      "documentBytes": 406049,
+      "estimated50HistoryBytes": 20302450,
+      "timings": {
+        "normalize": {
+          "medianMs": 1.896,
+          "minMs": 1.853,
+          "maxMs": 1.958
+        },
+        "storeLoad": {
+          "medianMs": 1.863,
+          "minMs": 1.773,
+          "maxMs": 2.126
+        },
+        "addRoom": {
+          "medianMs": 3.198,
+          "minMs": 3.167,
+          "maxMs": 3.517
+        },
+        "moveRotate": {
+          "medianMs": 4.524,
+          "minMs": 4.22,
+          "maxMs": 4.745
+        },
+        "routeCold": {
+          "medianMs": 0.977,
+          "minMs": 0.944,
+          "maxMs": 1.378
+        },
+        "routeCached": {
+          "medianMs": 0.063,
+          "minMs": 0.055,
+          "maxMs": 0.065
+        },
+        "entityBatch": {
+          "medianMs": 0.128,
+          "minMs": 0.115,
+          "maxMs": 0.144
+        },
+        "roomTheme": {
+          "medianMs": 0.046,
+          "minMs": 0.037,
+          "maxMs": 0.056
+        },
+        "faction": {
+          "medianMs": 0.018,
+          "minMs": 0.017,
+          "maxMs": 0.022
+        },
+        "encounter": {
+          "medianMs": 0.058,
+          "minMs": 0.057,
+          "maxMs": 0.061
+        },
+        "encounterRevision": {
+          "medianMs": 1.86,
+          "minMs": 1.614,
+          "maxMs": 16.868
+        },
+        "jsonExport": {
+          "medianMs": 3.476,
+          "minMs": 3.345,
+          "maxMs": 3.667
+        },
+        "jsonImport": {
+          "medianMs": 8.907,
+          "minMs": 8.488,
+          "maxMs": 9.319
+        },
+        "gmHTML": {
+          "medianMs": 10.714,
+          "minMs": 10.336,
+          "maxMs": 11.507
+        },
+        "playerZIP": {
+          "medianMs": 66.298,
+          "minMs": 59.116,
+          "maxMs": 71.176
+        },
+        "undoRedo": {
+          "medianMs": 5.617,
+          "minMs": 5.418,
+          "maxMs": 8.721
+        }
+      }
+    },
+    {
+      "rooms": 100,
+      "entities": 500,
+      "encounters": 80,
+      "jsonBytes": 869972,
+      "documentBytes": 869860,
+      "estimated50HistoryBytes": 43493000,
+      "timings": {
+        "normalize": {
+          "medianMs": 4.215,
+          "minMs": 3.737,
+          "maxMs": 4.378
+        },
+        "storeLoad": {
+          "medianMs": 3.638,
+          "minMs": 3.59,
+          "maxMs": 4.113
+        },
+        "addRoom": {
+          "medianMs": 6.53,
+          "minMs": 6.219,
+          "maxMs": 7.268
+        },
+        "moveRotate": {
+          "medianMs": 9.174,
+          "minMs": 8.671,
+          "maxMs": 9.442
+        },
+        "routeCold": {
+          "medianMs": 1.402,
+          "minMs": 1.22,
+          "maxMs": 1.988
+        },
+        "routeCached": {
+          "medianMs": 0.084,
+          "minMs": 0.082,
+          "maxMs": 0.098
+        },
+        "entityBatch": {
+          "medianMs": 0.142,
+          "minMs": 0.126,
+          "maxMs": 0.163
+        },
+        "roomTheme": {
+          "medianMs": 0.031,
+          "minMs": 0.027,
+          "maxMs": 0.042
+        },
+        "faction": {
+          "medianMs": 0.012,
+          "minMs": 0.011,
+          "maxMs": 0.012
+        },
+        "encounter": {
+          "medianMs": 0.042,
+          "minMs": 0.038,
+          "maxMs": 0.053
+        },
+        "encounterRevision": {
+          "medianMs": 3.457,
+          "minMs": 3.392,
+          "maxMs": 3.582
+        },
+        "jsonExport": {
+          "medianMs": 7.114,
+          "minMs": 6.938,
+          "maxMs": 7.319
+        },
+        "jsonImport": {
+          "medianMs": 18.705,
+          "minMs": 17.448,
+          "maxMs": 20.133
+        },
+        "gmHTML": {
+          "medianMs": 21.453,
+          "minMs": 21.006,
+          "maxMs": 22.122
+        },
+        "playerZIP": {
+          "medianMs": 78.52,
+          "minMs": 74.831,
+          "maxMs": 79.091
+        },
+        "undoRedo": {
+          "medianMs": 11.32,
+          "minMs": 11.211,
+          "maxMs": 11.469
+        }
+      }
+    }
+  ]
+}

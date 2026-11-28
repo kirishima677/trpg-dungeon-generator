@@ -1,5 +1,7 @@
 # Faction管理システム
 
+> Phase 2.5で共通保存処理とDocument検証の境界を整理しました。機能追加時点の記録は以下に残し、現行の構成・制約は[アーキテクチャ](phase-2-5/architecture.md)と[監査結果](phase-2-5/results.md)を参照してください。
+
 実装日: 2026-11-28。Dungeon JSON **1.6.0** / IndexedDB **v5**。
 
 ## できることと操作

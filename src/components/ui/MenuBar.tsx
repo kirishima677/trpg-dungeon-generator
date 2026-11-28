@@ -34,8 +34,8 @@ export function MenuBar() {
     try {
       await dungeonRepository.saveMainEditorSnapshot(dungeon);
       flash('保存しました ✓');
-    } catch {
-      flash('保存に失敗しました ✗');
+    } catch (error) {
+      flash(error instanceof Error ? error.message : '保存に失敗しました ✗');
     } finally {
       setSaving(false);
     }

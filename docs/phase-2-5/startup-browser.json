@@ -1,0 +1,15 @@
+{
+  "method": "Three alternating navigations per production build, Node clock from createBrowserTab to visible Load button. Includes automation and accessibility observation overhead. Baseline reconstructed from immutable be8ffc7 with same installed dependencies on port 4174. Current build on 4173. No strict startup speed claim.",
+  "samplesMs": {
+    "before": [
+      4620,
+      1139,
+      1146
+    ],
+    "after": [
+      1117,
+      1137,
+      1147
+    ]
+  }
+}

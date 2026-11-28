@@ -1,12 +1,12 @@
 import { db } from '../db';
-import { normalizeDungeonDocument } from '../model';
+import { assertDungeonDocument } from '../model/dungeonValidation';
 import type { DungeonDocument } from '../model/types';
 import type { DungeonDocumentInput } from '../model/normalizeDungeon';
 import { SCHEMA_VERSION } from '../model/dungeonSchema';
 
 export const dungeonRepository = {
   async save(dungeon: DungeonDocument): Promise<void> {
-    await db.dungeons.put(normalizeDungeonDocument(dungeon));
+    await db.dungeons.put(assertDungeonDocument(dungeon));
   },
 
   async saveMainEditorSnapshot(dungeon: DungeonDocumentInput): Promise<void> {
@@ -24,7 +24,7 @@ export const dungeonRepository = {
         const entity=legacy&&!Object.hasOwn(e,'factionId')&&previous?.factionId?{...e,factionId:previous.factionId}:e;
         return legacy&&!Object.hasOwn(e,'origin')&&previous?.origin?.type==='encounter'?{...entity,origin:previous.origin}:entity;
       });
-      const normalized = normalizeDungeonDocument({ ...dungeon, rooms, entities, theme,encounters:dungeon.encounters===undefined&&legacy?existing?.encounters?.filter(e=>rooms.some(r=>r.id===e.roomId)):dungeon.encounters,
+      const normalized = assertDungeonDocument({ ...dungeon, rooms, entities, theme,encounters:dungeon.encounters===undefined&&legacy?existing?.encounters?.filter(e=>rooms.some(r=>r.id===e.roomId)):dungeon.encounters,
         factions:dungeon.factions===undefined&&legacy?existing?.factions:dungeon.factions,factionRelations:dungeon.factionRelations===undefined&&legacy?existing?.factionRelations:dungeon.factionRelations,
         roomFactionAssignments:dungeon.roomFactionAssignments===undefined&&legacy?existing?.roomFactionAssignments?.filter(a=>rooms.some(r=>r.id===a.roomId)):dungeon.roomFactionAssignments });
       if (existing) await db.dungeons.update(normalized.id, {
@@ -50,7 +50,7 @@ export const dungeonRepository = {
       if (!existing) {
         throw new Error(`Cannot save markdown: dungeon with id ${id} not found. The dungeon may have been deleted.`);
       }
-      await db.dungeons.put(normalizeDungeonDocument({
+      await db.dungeons.put(assertDungeonDocument({
         ...existing,
         markdown,
         updatedAt,
@@ -60,12 +60,12 @@ export const dungeonRepository = {
 
   async load(id: string): Promise<DungeonDocument | undefined> {
     const dungeon = await db.dungeons.get(id);
-    return dungeon ? normalizeDungeonDocument(dungeon) : undefined;
+    return dungeon ? assertDungeonDocument(dungeon) : undefined;
   },
 
   async list(): Promise<DungeonDocument[]> {
     const dungeons = await db.dungeons.orderBy('updatedAt').reverse().toArray();
-    return dungeons.map(normalizeDungeonDocument);
+    return dungeons.map(d=>assertDungeonDocument(d));
   },
 
   async delete(id: string): Promise<void> {
@@ -73,7 +73,7 @@ export const dungeonRepository = {
   },
 
   async saveAll(dungeons: DungeonDocument[]): Promise<void> {
-    await db.dungeons.bulkPut(dungeons.map(normalizeDungeonDocument));
+    await db.dungeons.bulkPut(dungeons.map(d => assertDungeonDocument(d)));
   },
 };
 

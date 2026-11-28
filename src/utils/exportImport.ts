@@ -1,11 +1,7 @@
 import type { DungeonDocument, ExportEnvelope } from '../model/types';
-import { normalizeDungeonDocument } from '../model/normalizeDungeon';
+import { assertDungeonDocument } from '../model/dungeonValidation';
 import type { DungeonDocumentInput } from '../model/normalizeDungeon';
-import { normalizeConnections } from '../model/connections';
-import { isStandardPiece, normalizePiece, pieceStructure } from '../editor/pieces/pieceDefinition';
-import { DEFAULT_PIECES } from '../model/pieceLibrary';
 import { SCHEMA_VERSION, SUPPORTED_DUNGEON_SCHEMAS } from '../model/dungeonSchema';
-import { roomInformationError } from '../model/roomInformation';
 import { ENTITY_LIMITS } from '../model/entity';
 import { rejectDuplicateJsonKeys } from '../content/contentJson';
 
@@ -17,7 +13,7 @@ export function buildExportEnvelope(dungeon: DungeonDocument): ExportEnvelope {
     formatId: FORMAT_ID,
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
-    dungeon: { ...normalizeDungeonDocument(dungeon), version: SCHEMA_VERSION },
+    dungeon: { ...assertDungeonDocument(dungeon), version: SCHEMA_VERSION },
   };
   if (new TextEncoder().encode(JSON.stringify(envelope, null, 2)).length > ENTITY_LIMITS.dungeonJsonBytes) throw new Error('Dungeon JSONは20 MiBまでです。');
   return envelope;
@@ -56,51 +52,12 @@ export function parseImport(raw: unknown): ExportEnvelope {
   }
   if(['1.6.0',SCHEMA_VERSION].includes(envelope.schemaVersion)&&['factions','factionRelations','roomFactionAssignments'].some(k=>!Array.isArray((dungeon as unknown as Record<string,unknown>)[k])))throw new Error('Faction配列が不足しています。');
   if(envelope.schemaVersion===SCHEMA_VERSION&&!Array.isArray(dungeon.encounters))throw new Error('Encounter配列が不足しています。');
-  const roomIds = new Set<string>();
-  const pieceDefinitions = new Map<string, string>();
-  const roomNumbers = new Set<string>();
-  for (const room of dungeon.rooms) {
-    if (!room || typeof room.id !== 'string' || roomIds.has(room.id)
-      || !room.position || !Number.isFinite(room.position.x) || !Number.isFinite(room.position.y)
-      || ![0, 90, 180, 270].includes(room.rotation)
-      || !room.piece || !Array.isArray(room.piece.cells) || room.piece.cells.length === 0
-      || !Array.isArray(room.piece.connectors)) throw new Error('Invalid room');
-    roomIds.add(room.id);
-    if (['1.2.0', '1.3.0', '1.4.0', '1.5.0','1.6.0', SCHEMA_VERSION].includes(envelope.schemaVersion)) {
-      const error = roomInformationError(room.information, roomNumbers);
-      if (error) throw new Error(`Invalid room information: ${error}`);
-      roomNumbers.add(room.information!.number.trim());
-    }
-    const connectorIds = new Set<string>();
-    for (const cell of room.piece.cells) {
-      if (!cell || !Number.isFinite(cell.x) || !Number.isFinite(cell.y)) throw new Error('Invalid room cell');
-    }
-    for (const connector of room.piece.connectors) {
-      if (!connector || typeof connector.id !== 'string' || connectorIds.has(connector.id)
-        || !connector.position || !Number.isFinite(connector.position.x) || !Number.isFinite(connector.position.y)
-        || !['north', 'east', 'south', 'west'].includes(connector.direction)) throw new Error('Invalid connector');
-      connectorIds.add(connector.id);
-    }
-    if (room.pieceId !== room.piece.id) throw new Error('Invalid piece reference');
-    if (isStandardPiece(room.pieceId)) {
-      const standard = DEFAULT_PIECES.find(p => p.id === room.pieceId)!;
-      if (pieceStructure(room.piece) !== pieceStructure(standard)) throw new Error('Invalid standard piece definition');
-    } else {
-      const piece = normalizePiece(room.piece), signature = pieceStructure(piece);
-      if (pieceDefinitions.has(piece.id) && pieceDefinitions.get(piece.id) !== signature) throw new Error('Conflicting piece definitions');
-      pieceDefinitions.set(piece.id, signature);
-    }
-  }
-  if (dungeon.connections !== undefined
-    && (!Array.isArray(dungeon.connections)
-      || normalizeConnections(dungeon.rooms, dungeon.connections).length !== dungeon.connections.length)) {
-    throw new Error('Invalid connections: missing reference, duplicate endpoint or invalid type');
-  }
+  const document = assertDungeonDocument(dungeon, { requireRoomInformation: !['1.0.0','1.1.0'].includes(envelope.schemaVersion) });
   return {
     formatId: FORMAT_ID,
     schemaVersion: envelope.schemaVersion,
     exportedAt: envelope.exportedAt as string,
-    dungeon: { ...normalizeDungeonDocument(dungeon), version: SCHEMA_VERSION },
+    dungeon: document,
   };
 }
 

@@ -43,7 +43,7 @@ export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): Dungeon
   const rooms = normalizeRoomInformationList(dungeon.rooms.map(room => {
     const { connections: _legacy, roomTheme: rawTheme, ...placedRoom } = room;
     const roomTheme = normalizeRoomThemeAssignment(rawTheme);
-    return { ...placedRoom, ...(roomTheme ? { roomTheme } : {}) };
+    return { ...structuredClone(placedRoom), ...(roomTheme ? { roomTheme } : {}) };
   }));
   const { theme: rawTheme, ...base } = dungeon;
   const theme = normalizeThemeAssignment(rawTheme);
@@ -51,6 +51,7 @@ export function normalizeDungeonDocument(dungeon: DungeonDocumentInput): Dungeon
   const factionState=normalizeFactionState(dungeon,rooms,entities);
   return {
     ...base,
+    meta: structuredClone(dungeon.meta),
     ...factionState,
     encounters:normalizeEncounters(dungeon.encounters,rooms,factionState.factions,entities),
     version: SCHEMA_VERSION,

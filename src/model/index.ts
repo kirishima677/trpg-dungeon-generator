@@ -32,3 +32,8 @@ export type { EncounterSelectionPolicy, DungeonThemeSelectionPolicy } from './th
 export type { EncounterTemplate, EncounterTemplateDraft, EncounterApplicability, EncounterFactionRole, EncounterFactionRelationCondition, EncounterContentEntry } from './encounter/template';
 export type { EncounterInstance, EncounterEdits } from './encounter/state';
 export type { EncounterEntityOrigin, EntityOrigin } from './entity';
+export {createDungeonDocument,createPlacedRoom,createConnection} from './dungeonFactory';
+export {duplicateRoomDocument,deleteRoomDocument,deleteEncounterDocument} from './dungeonCommands';
+export {validateDungeonDocument,assertDungeonDocument} from './dungeonValidation';
+export type {DungeonValidationResult} from './dungeonValidation';
+export type {Diagnostic} from './diagnostic';

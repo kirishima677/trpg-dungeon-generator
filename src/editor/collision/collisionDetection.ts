@@ -1,4 +1,4 @@
-import type { PlacedRoom } from '../../model/types';
+import type { PlacedRoomInput as PlacedRoom } from '../../model/types';
 import { getWorldCells } from '../../utils/geometry';
 
 /**
