@@ -1,3 +1,5 @@
+import {emptyEncounterSelection,normalizeEncounterSelection} from './themeSelection';
+import type {EncounterSelectionPolicy} from './themeSelection';
 import { emptyFactionSelection, normalizeFactionSelection } from './themeSelection';
 import type { FactionSelectionPolicy } from './themeSelection';
 import { v4 as uuid } from 'uuid';
@@ -7,7 +9,7 @@ import type { ContentSelectionPolicy, PieceSelectionPolicy, RoomThemeSelectionPo
 export interface DungeonTheme {
   id: string; name: string; genre: string; category: string; summary: string; description: string; gmNotes: string; tags: string[];
   pieceSelection: PieceSelectionPolicy; contentSelection: ContentSelectionPolicy; createdAt: string; updatedAt: string;
-  roomThemeSelection: RoomThemeSelectionPolicy; factionSelection: FactionSelectionPolicy;
+  encounterSelection:EncounterSelectionPolicy; roomThemeSelection: RoomThemeSelectionPolicy; factionSelection: FactionSelectionPolicy;
 }
 export type DungeonThemeDraft = Omit<DungeonTheme, 'createdAt' | 'updatedAt'>;
 export interface DungeonThemeAssignment { sourceThemeId: string; themeSnapshot: DungeonTheme }
@@ -26,7 +28,7 @@ export function normalizeThemeMetadata(value: unknown) {
     tags: selectionList(raw.tags, 'テーマタグ') };
 }
 export function normalizeThemeFields(value:unknown) {
-  const raw=selectionRecord(value); return {...normalizeThemeMetadata(value),pieceSelection:normalizePieceSelection(raw.pieceSelection),contentSelection:normalizeContentSelection(raw.contentSelection)};
+  const raw=selectionRecord(value); return {...normalizeThemeMetadata(value),encounterSelection:raw.encounterSelection===undefined?emptyEncounterSelection('all'):normalizeEncounterSelection(raw.encounterSelection),pieceSelection:normalizePieceSelection(raw.pieceSelection),contentSelection:normalizeContentSelection(raw.contentSelection)};
 }
 export function normalizeThemeDraft(value: unknown): DungeonThemeDraft {
   const raw = selectionRecord(value), theme = { ...normalizeThemeFields(value),
@@ -44,7 +46,7 @@ export function normalizeTheme(value: unknown): DungeonTheme {
   const theme = { ...draft, createdAt, updatedAt }; checkThemeSize(theme); return theme;
 }
 export function newTheme(): DungeonThemeDraft {
-  return { id: uuid(), name: '', genre: '', category: '', summary: '', description: '', gmNotes: '', tags: [], pieceSelection: emptyPieceSelection(), contentSelection: emptyContentSelection(), roomThemeSelection: emptyRoomThemeSelection(), factionSelection: emptyFactionSelection() };
+  return { id: uuid(), name: '', genre: '', category: '', summary: '', description: '', gmNotes: '', tags: [], pieceSelection: emptyPieceSelection(), contentSelection: emptyContentSelection(), roomThemeSelection: emptyRoomThemeSelection(), factionSelection: emptyFactionSelection(),encounterSelection:emptyEncounterSelection() };
 }
 export function duplicateTheme(value: DungeonThemeDraft): DungeonThemeDraft {
   return { ...normalizeThemeDraft(value), id: uuid(), name: `${value.name}（複製）` };

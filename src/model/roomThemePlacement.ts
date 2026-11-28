@@ -13,7 +13,7 @@ export function prepareRequiredPlacement(dungeon: DungeonDocument, roomId: strin
   const resolved = resolveRoomTheme({ dungeonTheme:dungeon.theme?.themeSnapshot,roomTheme:theme,pieces,contents });
   const added: EntityInstance[] = [], blockers: string[] = [];
   const entries = resolved.requiredContents.map(item => {
-    const existing = dungeon.entities.filter(e => e.roomId === roomId && e.origin?.sourceRoomThemeId === theme.id && e.origin.requiredEntryId === item.entry.id);
+    const existing = dungeon.entities.filter(e => e.roomId === roomId && e.origin?.type==='room-theme-required'&&e.origin.sourceRoomThemeId === theme.id && e.origin.requiredEntryId === item.entry.id);
     if (item.status !== 'resolved') blockers.push(`必須項目「${item.entry.contentId}」が${item.status === 'missing' ? '未解決' : '種別不一致'}です。`);
     if (!existing.length && item.status === 'resolved') {
       try {

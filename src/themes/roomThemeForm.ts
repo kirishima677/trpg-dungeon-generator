@@ -1,6 +1,6 @@
 import type { RoomThemeDraft, RequiredContentEntry, RoomPieceConstraints } from '../model/roomTheme';
 import { ROOM_CONSTRAINT_FIELDS, normalizeRoomThemeDraft, normalizeRoomConstraints } from '../model/roomTheme';
-import { fromPolicyForms, policyList, toThemePolicyForm } from './themeForm';
+import { fromEncounterPolicyForm,fromPolicyForms, policyList, toThemePolicyForm } from './themeForm';
 import type { ThemePolicyForm } from './themeForm';
 export interface RoomThemeForm extends ThemePolicyForm<RoomThemeDraft> {
   constraints: Record<keyof RoomPieceConstraints,string>;
@@ -25,5 +25,5 @@ export function fromRequiredForm(form: RoomThemeForm) {
   });
 }
 export function fromRoomThemeForm(form: RoomThemeForm): RoomThemeDraft {
-  return normalizeRoomThemeDraft({ ...form.theme,tags:policyList(form.tagsText),...fromPolicyForms(form),pieceConstraints:fromRoomConstraintForm(form),requiredContents:fromRequiredForm(form) });
+  return normalizeRoomThemeDraft({ ...form.theme,tags:policyList(form.tagsText),...fromPolicyForms(form),encounterSelection:fromEncounterPolicyForm(form.encounters),pieceConstraints:fromRoomConstraintForm(form),requiredContents:fromRequiredForm(form) });
 }

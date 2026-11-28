@@ -42,10 +42,11 @@ interface ToolbarProps {
   onOpenContentEditor: () => void;
   onOpenThemeEditor: () => void;
   onOpenThemeSettings: () => void;
+  onOpenEncounterEditor:()=>void;onOpenEncounterOverview:()=>void;
   onOpenRoomThemeEditor: () => void; onOpenFactionEditor:()=>void; onOpenFactionSettings:()=>void;
 }
 
-export function Toolbar({ onOpenMarkdown, onOpenPieceEditor, onOpenPublishing, onOpenContentEditor, onOpenThemeEditor, onOpenThemeSettings, onOpenRoomThemeEditor,onOpenFactionEditor,onOpenFactionSettings }: ToolbarProps) {
+export function Toolbar({ onOpenMarkdown, onOpenPieceEditor, onOpenPublishing, onOpenContentEditor, onOpenThemeEditor, onOpenThemeSettings, onOpenEncounterEditor,onOpenEncounterOverview,onOpenRoomThemeEditor,onOpenFactionEditor,onOpenFactionSettings }: ToolbarProps) {
   const showFactions=useDungeonStore(s=>s.showFactions),setShowFactions=useDungeonStore(s=>s.setShowFactions);
   const {
     editorMode,
@@ -183,7 +184,7 @@ export function Toolbar({ onOpenMarkdown, onOpenPieceEditor, onOpenPublishing, o
       <button onClick={onOpenContentEditor} style={{ border: '1px solid #cbd5e1', borderRadius: 8, padding: '8px 12px', background: '#f8fafc', cursor: 'pointer' }}>コンテンツ</button>
       <button onClick={onOpenThemeEditor}>テーマ管理</button>
       <button onClick={onOpenThemeSettings}>テーマ設定</button>
-      <button onClick={onOpenRoomThemeEditor}>Room Theme管理</button><button onClick={onOpenFactionEditor}>Faction管理</button><button onClick={onOpenFactionSettings}>勢力設定</button><label><input type="checkbox" aria-label="勢力支配を表示" checked={showFactions} onChange={e=>setShowFactions(e.target.checked)} />勢力支配</label>
+      <button onClick={onOpenRoomThemeEditor}>Room Theme管理</button><button onClick={onOpenEncounterEditor}>Encounter管理</button><button onClick={onOpenEncounterOverview}>Encounter一覧</button><button onClick={onOpenFactionEditor}>Faction管理</button><button onClick={onOpenFactionSettings}>勢力設定</button><label><input type="checkbox" aria-label="勢力支配を表示" checked={showFactions} onChange={e=>setShowFactions(e.target.checked)} />勢力支配</label>
       <label style={{ fontSize: 12, marginLeft: 8 }}><input type="checkbox" checked={roomLabels.numbers}
         onChange={e => setRoomLabels({ numbers: e.target.checked })} /> 部屋番号</label>
       <label style={{ fontSize: 12 }}><input type="checkbox" checked={roomLabels.names}

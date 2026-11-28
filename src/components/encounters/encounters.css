@@ -1,0 +1,9 @@
+.room-encounters label {display:block;margin:10px 0;overflow-wrap:anywhere}
+.room-encounters input:not([type=checkbox]),.room-encounters select,.room-encounters textarea {width:100%;box-sizing:border-box;padding:5px;max-width:100%}
+.room-encounters button {padding:5px;margin:4px 0}
+.room-encounters p,.room-encounters small {overflow-wrap:anywhere}
+.room-encounters [role=alert],.encounter-application [role=alert] {color:#b91c1c}
+.encounter-application fieldset,.theme-editor .content-properties fieldset {border:1px solid #cbd5e1;border-radius:6px;padding:12px;margin:12px 0;min-width:0}
+.encounter-application label {display:block;margin:10px 0}
+.encounter-application select {max-width:100%}
+.encounter-application small,.theme-editor small {overflow-wrap:anywhere}

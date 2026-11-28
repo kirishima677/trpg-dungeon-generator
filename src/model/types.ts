@@ -1,3 +1,4 @@
+import type {EncounterInstance} from './encounter/state';
 import type { FactionState } from './factionState';
 import type { EntityInstance } from './entity';
 import type { DungeonThemeAssignment } from './dungeonTheme';
@@ -103,6 +104,7 @@ export interface DungeonDocument extends FactionState {
   rooms: PlacedRoom[];
   connections: Connection[];
   entities: EntityInstance[];
+  encounters:EncounterInstance[];
   theme?: DungeonThemeAssignment;
   markdown: string;
   meta: DungeonMeta;

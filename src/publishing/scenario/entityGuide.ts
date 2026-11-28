@@ -1,6 +1,7 @@
 import {factionDisplayName} from '../../model/factionState';
 import { CONTENT_KINDS } from '../../model/content';
 import type { ContentAttributeValue, ContentKind } from '../../model/content';
+import type {EntityInstance} from '../../model/entity';
 import { entityDisplayName, normalizeEntities } from '../../model/entity';
 import type { DungeonDocument } from '../../model/types';
 import type { ScenarioGuideOptions } from './scenarioGuide';
@@ -14,10 +15,10 @@ export interface GuideEntityGroup { kind: ContentKind; entries: GmGuideEntity[] 
 export interface RoomEntityGuide { entities?: GuideEntityGroup[]; entityDescriptions?: string[] }
 
 /** Player data has only explicitly public descriptions. Never pass source objects to HTML rendering. */
-export function buildEntityGuides(source: DungeonDocument, gm: boolean, options: ScenarioGuideOptions, text: (value: string) => string) {
+export function buildEntityGuides(source: DungeonDocument, gm: boolean, options: ScenarioGuideOptions, text: (value: string) => string,include:(entity:EntityInstance)=>boolean=()=>true) {
   const entities = normalizeEntities(source.entities, source.rooms), byRoom = new Map<string, RoomEntityGuide>();
   for (const room of source.rooms) {
-    const values = entities.filter(e => e.roomId === room.id);
+    const values = entities.filter(e => e.roomId === room.id&&include(e));
     if (!gm) {
       const descriptions = options.includeRoomDescriptions ? values.filter(e => e.visibility === 'public' && e.publicDescription.trim()).map(e => text(e.publicDescription)) : [];
       if (descriptions.length) byRoom.set(room.id, { entityDescriptions: descriptions });

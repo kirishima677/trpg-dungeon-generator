@@ -1,3 +1,4 @@
+import type {RoomEncounterGuide} from './encounterGuide';
 import type {GuideFaction,GuideRoomFaction} from './factionGuide';
 import type { PublishAudience, PublishProfile } from '../publishProfile';
 import type { RoomEntityGuide } from './entityGuide';
@@ -24,7 +25,7 @@ export function validateScenarioGuideOptions(options: ScenarioGuideOptions) {
   const keys = Object.keys(defaultScenarioGuideOptions('player')) as (keyof ScenarioGuideOptions)[];
   if (!options || keys.some(key => typeof options[key] !== 'boolean')) throw new Error('シナリオガイドの出力設定が不正です。');
 }
-export interface ScenarioGuideRoom extends RoomEntityGuide {
+export interface ScenarioGuideRoom extends RoomEntityGuide,RoomEncounterGuide {
   factionControl?:GuideRoomFaction;
   anchorId: string;
   mapRoomId: string;

@@ -4,10 +4,12 @@ import type { ContentDefinition } from './content';
 
 export type EntityVisibility = 'gm-only' | 'public';
 export interface RoomThemeEntityOrigin { type: 'room-theme-required'; sourceRoomThemeId: string; requiredEntryId: string }
+export interface EncounterEntityOrigin {type:'encounter';encounterInstanceId:string;entryId:string}
+export type EntityOrigin=RoomThemeEntityOrigin|EncounterEntityOrigin;
 export interface EntityInstance {
   id: string; roomId: string; sourceContentId: string; contentSnapshot: ContentDefinition;
   quantity: number; customName: string; publicDescription: string; gmNotes: string; visibility: EntityVisibility;
-  origin?: RoomThemeEntityOrigin; factionId?:string;
+  origin?: EntityOrigin; factionId?:string;
 }
 export type EntityEdits = Pick<EntityInstance, 'quantity' | 'customName' | 'publicDescription' | 'gmNotes' | 'visibility'>;
 export const ENTITY_LIMITS = { perRoom: 50, total: 500, quantity: 1_000_000, name: 200, markdown: 20_000,
@@ -38,12 +40,12 @@ export function normalizeEntity(value: unknown, roomIds: ReadonlySet<string>): E
   const sourceContentId = string(raw.sourceContentId, '元のContent ID', 128, true);
   const contentSnapshot = snapshot(raw.contentSnapshot);
   if (contentSnapshot.id !== sourceContentId) throw new Error('元のContent IDとスナップショットが一致しません。');
-  let origin: RoomThemeEntityOrigin | undefined;
+  let origin: EntityOrigin | undefined;
   if (raw.origin !== undefined) {
     if (!raw.origin || typeof raw.origin !== 'object' || Array.isArray(raw.origin)) throw new Error('Entityの由来情報が不正です。');
     const o = raw.origin as Record<string, unknown>;
-    if (o.type !== 'room-theme-required') throw new Error('Entityの由来種別が不正です。');
-    origin = { type: o.type, sourceRoomThemeId: string(o.sourceRoomThemeId, '由来Theme ID', 128, true), requiredEntryId: string(o.requiredEntryId, '必須構成項目ID', 128, true) };
+    if (o.type !== 'room-theme-required'&&o.type!=='encounter') throw new Error('Entityの由来種別が不正です。');
+    origin = o.type==='encounter'?{type:o.type,encounterInstanceId:string(o.encounterInstanceId,'Encounter Instance ID',128,true),entryId:string(o.entryId,'Encounter Entry ID',128,true)}:{ type: o.type, sourceRoomThemeId: string(o.sourceRoomThemeId, '由来Theme ID', 128, true), requiredEntryId: string(o.requiredEntryId, '必須構成項目ID', 128, true) };
   }
   const factionId=raw.factionId===undefined?undefined:string(raw.factionId,'所属勢力ID',128,true);
   if(factionId&&!['monster','npc'].includes(contentSnapshot.kind))throw new Error('勢力への所属はMonsterまたはNPCのみです。');

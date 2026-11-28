@@ -11,8 +11,10 @@ const RoomThemeEditorWindow = lazy(() => import('./components/themes/RoomThemeEd
 
 const FactionEditorWindow=lazy(()=>import('./components/factions/FactionEditorWindow').then(m=>({default:m.FactionEditorWindow})));
 
+const EncounterTemplateEditorWindow=lazy(()=>import('./components/encounters/EncounterTemplateEditorWindow').then(m=>({default:m.EncounterTemplateEditorWindow})));
 function App() {
   const params = new URLSearchParams(window.location.search);
+  if(params.get('encounterEditor')==='1')return <WindowLoader name="Encounter Template管理"><EncounterTemplateEditorWindow /></WindowLoader>;
   if(params.get('factionEditor')==='1')return <WindowLoader name="Faction管理"><FactionEditorWindow /></WindowLoader>;
   if (params.get('publishing') === '1') return <WindowLoader name="出版画面"><PublishingWindow /></WindowLoader>;
   if (params.get('pieceEditor') === '1') return <WindowLoader name="ピースエディタ"><PieceEditorWindow /></WindowLoader>;

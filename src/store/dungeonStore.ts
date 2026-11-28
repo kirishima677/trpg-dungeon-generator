@@ -1,3 +1,7 @@
+import {applyEncounterPlan} from '../model/encounter/application';
+import type {EncounterApplicationPlan} from '../model/encounter/application';
+import {normalizeEncounters,normalizeEncounterEdits} from '../model/encounter/state';
+import type {EncounterEdits} from '../model/encounter/state';
 import { applyFactionCommand, normalizeFactionState } from '../model/factionState';
 import type { FactionCommand } from '../model/factionState';
 import { create } from 'zustand';
@@ -57,6 +61,9 @@ export interface DungeonStore {
   // ── Dungeon actions ───────────────────────────────────────────────────────
   setDungeon: (dungeon: DungeonDocumentInput) => void;
   newDungeon: () => void;
+  applyEncounter:(plan:EncounterApplicationPlan,contents:readonly ContentDefinition[],successfulConnectionIds?:ReadonlySet<string>)=>string|null;
+  editEncounter:(id:string,edits:EncounterEdits)=>string|null;
+  deleteEncounter:(id:string,withEntities:boolean)=>string|null;
   changeEntities: (command: EntityCommand) => string | null;
   assignTheme: (theme: DungeonTheme | null) => string | null;
   assignRoomTheme: (roomId: string, theme: RoomTheme | null) => string | null;
@@ -102,7 +109,7 @@ function createEmptyDungeon(): DungeonDocument {
     version: SCHEMA_VERSION,
     rooms: [],
     connections: [],
-    entities: [], factions:[],factionRelations:[],roomFactionAssignments:[],
+    encounters:[],entities: [], factions:[],factionRelations:[],roomFactionAssignments:[],
     markdown: '',
     meta: { gridSize: 40 },
     createdAt: now,
@@ -161,7 +168,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
   changeFactions(command){
     const {dungeon,undoStack}=get();
     try { const changes=applyFactionCommand(dungeon,command);
-      if(JSON.stringify(changes)===JSON.stringify({factions:dungeon.factions,factionRelations:dungeon.factionRelations,roomFactionAssignments:dungeon.roomFactionAssignments,entities:dungeon.entities}))return null;
+      if(JSON.stringify(changes)===JSON.stringify({factions:dungeon.factions,factionRelations:dungeon.factionRelations,roomFactionAssignments:dungeon.roomFactionAssignments,entities:dungeon.entities,encounters:dungeon.encounters}))return null;
       set({dungeon:touch({...dungeon,...changes}),undoStack:[...undoStack.slice(-MAX_HISTORY+1),snapshot(dungeon)],redoStack:[]});return null;
     }catch(e){return e instanceof Error?e.message:"勢力を変更できませんでした。";}
   },
@@ -194,11 +201,16 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
     });
   },
 
+  applyEncounter(plan,contents,successfulConnectionIds){
+    const {dungeon,undoStack}=get();try{const changes=applyEncounterPlan(dungeon,plan,contents,successfulConnectionIds);set({dungeon:touch({...dungeon,...changes}),undoStack:[...undoStack.slice(-MAX_HISTORY+1),snapshot(dungeon)],redoStack:[]});return null;}catch(e){return (e as Error).message;}
+  },
+  editEncounter(id,edits){const {dungeon,undoStack}=get();try{if(!dungeon.encounters.some(e=>e.id===id))throw new Error('Encounterがありません。');const encounters=normalizeEncounters(dungeon.encounters.map(e=>e.id===id?{...e,...normalizeEncounterEdits(edits)}:e),dungeon.rooms,dungeon.factions,dungeon.entities);if(JSON.stringify(encounters)===JSON.stringify(dungeon.encounters))return null;set({dungeon:touch({...dungeon,encounters}),undoStack:[...undoStack.slice(-MAX_HISTORY+1),snapshot(dungeon)],redoStack:[]});return null;}catch(e){return (e as Error).message;}},
+  deleteEncounter(id,withEntities){const {dungeon,undoStack}=get();if(!dungeon.encounters.some(e=>e.id===id))return 'Encounterがありません。';const encounters=dungeon.encounters.filter(e=>e.id!==id),entities=dungeon.entities.flatMap(e=>{if(e.origin?.type!=='encounter'||e.origin.encounterInstanceId!==id)return [e];if(withEntities)return [];const {origin:_origin,...rest}=e;return [rest];});set({dungeon:touch({...dungeon,encounters,entities}),undoStack:[...undoStack.slice(-MAX_HISTORY+1),snapshot(dungeon)],redoStack:[]});return null;},
   changeEntities(command) {
     const { dungeon, undoStack } = get();
     try {
       const entities = applyEntityCommand(dungeon.entities, dungeon.rooms, command);
-      if(entities) normalizeFactionState(dungeon,dungeon.rooms,entities);
+      if(entities){normalizeFactionState(dungeon,dungeon.rooms,entities);normalizeEncounters(dungeon.encounters,dungeon.rooms,dungeon.factions,entities);}
       if (entities) set({ dungeon: touch({ ...dungeon, entities }),
         undoStack: [...undoStack.slice(-MAX_HISTORY + 1), snapshot(dungeon)], redoStack: [] });
       return null;
@@ -259,9 +271,12 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
         if (!hasCollision(room,dungeon.rooms)) { found = true; break; }
       }
       if (!found) throw new Error('複製先の空き領域が見つかりません。');
-      const entities = [...dungeon.entities,...dungeon.entities.filter(e => e.roomId === roomId).map(e => ({ ...structuredClone(e),id:uuid(),roomId:room.id }))];
+      const encounterIds=new Map(dungeon.encounters.filter(e=>e.roomId===roomId).map(e=>[e.id,uuid()]));
+      const encounters=[...dungeon.encounters,...dungeon.encounters.filter(e=>e.roomId===roomId).map(e=>({...structuredClone(e),id:encounterIds.get(e.id)!,roomId:room.id}))];
+      const entities = [...dungeon.entities,...dungeon.entities.filter(e => e.roomId === roomId).map(e => ({ ...structuredClone(e),id:uuid(),roomId:room.id,...(e.origin?.type==='encounter'?{origin:{...e.origin,encounterInstanceId:encounterIds.get(e.origin.encounterInstanceId)!}}:{}) }))];
       checkEntityLimits(entities);
-      set({ dungeon:touch({ ...dungeon,rooms:[...dungeon.rooms,room],entities,roomFactionAssignments:[...dungeon.roomFactionAssignments,...dungeon.roomFactionAssignments.filter(a=>a.roomId===roomId).map(a=>({...structuredClone(a),roomId:room.id}))] }),selectedRoomId:room.id,selectedConnectionId:null,pendingConnector:null,
+      normalizeEncounters(encounters,[...dungeon.rooms,room],dungeon.factions,entities);
+      set({ dungeon:touch({ ...dungeon,rooms:[...dungeon.rooms,room],entities,encounters,roomFactionAssignments:[...dungeon.roomFactionAssignments,...dungeon.roomFactionAssignments.filter(a=>a.roomId===roomId).map(a=>({...structuredClone(a),roomId:room.id}))] }),selectedRoomId:room.id,selectedConnectionId:null,pendingConnector:null,
         undoStack:[...undoStack.slice(-MAX_HISTORY + 1),snapshot(dungeon)],redoStack:[] });
       return null;
     } catch(e) { return e instanceof Error ? e.message : '部屋を複製できませんでした。'; }
@@ -342,7 +357,7 @@ export const useDungeonStore = create<DungeonStore>((set, get) => ({
     const rooms = dungeon.rooms.filter(r => r.id !== id);
     const connections = dungeon.connections.filter(c => c.fromRoomId !== id && c.toRoomId !== id);
     const entities = dungeon.entities.filter(e => e.roomId !== id);
-    const next = touch({ ...dungeon, rooms, connections, entities,roomFactionAssignments:dungeon.roomFactionAssignments.filter(a=>a.roomId!==id) });
+    const next = touch({ ...dungeon, rooms, connections, entities,encounters:dungeon.encounters.filter(e=>e.roomId!==id),roomFactionAssignments:dungeon.roomFactionAssignments.filter(a=>a.roomId!==id) });
     set({
       dungeon: next,
       selectedRoomId: null,

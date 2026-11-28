@@ -1,3 +1,4 @@
+import '../encounters/encounters.css';
 import {factionDisplayName} from '../../model/factionState';
 import React, { useRef, useCallback, useEffect } from 'react';
 import { GridCanvas } from '../canvas/GridCanvas';
@@ -27,6 +28,7 @@ const DungeonThemePanel = React.lazy(() => import('../themes/DungeonThemePanel')
 
 const DungeonFactionPanel=React.lazy(()=>import('../factions/DungeonFactionPanel').then(m=>({default:m.DungeonFactionPanel})));
 
+const EncounterOverview=React.lazy(()=>import('../encounters/EncounterOverview').then(m=>({default:m.EncounterOverview})));
 export function Editor() {
   const { dungeon, selectedRoomId, selectRoom, undo, redo, rotateRoom,
     selectedConnectionId, selectConnection, deleteConnection, deleteRoom, cancelConnection, setEditorMode, editorMode } = useDungeonStore(useShallow(s => ({
@@ -61,6 +63,7 @@ export function Editor() {
   const currentDungeonIdRef = useRef(dungeon.id);
   const [referenceReady, setReferenceReady] = React.useState(false);
   const [windowError, setWindowError] = React.useState('');
+  const [encounterOpen,setEncounterOpen]=React.useState(false);
   const showFactions=useDungeonStore(s=>s.showFactions);
   const [factionOpen,setFactionOpen]=React.useState(false);
   const [themeOpen, setThemeOpen] = React.useState(false);
@@ -161,12 +164,12 @@ export function Editor() {
   }, []);
 
   return (
-    <><div inert={!referenceReady || themeOpen || factionOpen} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <><div inert={!referenceReady || themeOpen || factionOpen || encounterOpen} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {/* Menu bar */}
       <MenuBar />
 
       {/* Toolbar */}
-      <Toolbar onOpenFactionSettings={()=>{cancelConnection();setFactionOpen(true);}} onOpenFactionEditor={()=>{const opened=openEditorWindow('faction-editor-window',{factionEditor:'1'},'popup=yes,width=1200,height=850');setWindowError(opened?'':'Faction管理を開けませんでした。ポップアップを許可してください。');}} onOpenPublishing={() => {
+      <Toolbar onOpenEncounterEditor={()=>{const opened=openEditorWindow('encounter-editor-window',{encounterEditor:'1'},'popup=yes,width=1200,height=850');setWindowError(opened?'':'Encounter管理を開けませんでした。');}} onOpenEncounterOverview={()=>{cancelConnection();setEncounterOpen(true);}} onOpenFactionSettings={()=>{cancelConnection();setFactionOpen(true);}} onOpenFactionEditor={()=>{const opened=openEditorWindow('faction-editor-window',{factionEditor:'1'},'popup=yes,width=1200,height=850');setWindowError(opened?'':'Faction管理を開けませんでした。ポップアップを許可してください。');}} onOpenPublishing={() => {
         try {
           const current = useDungeonStore.getState().dungeon;
           const provider = publishingProvider.current, request = ++publishRequest.current;
@@ -230,8 +233,8 @@ export function Editor() {
         </div>
 
         {/* Right: properties */}
-        <PropertiesPanel />
+        <PropertiesPanel scene={connectionScene} />
       </div>
-    </div>{factionOpen&&<React.Suspense fallback={<p>勢力設定を読み込んでいます…</p>}><DungeonFactionPanel key={dungeon.id} close={()=>setFactionOpen(false)} /></React.Suspense>}{themeOpen && <React.Suspense fallback={<div role="status">テーマ設定を読み込んでいます…</div>}><DungeonThemePanel key={dungeon.id} close={() => setThemeOpen(false)} /></React.Suspense>}</>
+    </div>{encounterOpen&&<React.Suspense fallback={<p>Encounter一覧を準備しています…</p>}><EncounterOverview close={()=>setEncounterOpen(false)} /></React.Suspense>}{factionOpen&&<React.Suspense fallback={<p>勢力設定を読み込んでいます…</p>}><DungeonFactionPanel key={dungeon.id} close={()=>setFactionOpen(false)} /></React.Suspense>}{themeOpen && <React.Suspense fallback={<div role="status">テーマ設定を読み込んでいます…</div>}><DungeonThemePanel key={dungeon.id} close={() => setThemeOpen(false)} /></React.Suspense>}</>
   );
 }

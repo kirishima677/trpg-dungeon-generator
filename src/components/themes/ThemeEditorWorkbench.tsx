@@ -1,3 +1,4 @@
+import {EncounterSelectionEditor} from '../encounters/EncounterSelectionEditor';
 import { useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { LibraryEditorState } from '../library/useLibraryEditor';
@@ -18,12 +19,12 @@ import { ThemeCandidatePreview } from './ThemeCandidatePreview';
 
 type BaseDraft = Pick<DungeonThemeDraft, 'id'|'name'|'genre'|'category'|'summary'|'description'|'gmNotes'|'tags'>;
 export function ThemeEditorWorkbench<D extends BaseDraft, T extends D & { createdAt: string; updatedAt: string }, F extends ThemePolicyForm<D>>({
-  editor, library, title, validError, buildExport, filename, download = downloadJson, extraFields, extraTabs = [], preview, libraryName = 'dungeon-theme-library', includePiece=true, contentKinds=CONTENT_KINDS, noun='テーマ',
+  editor, library, title, validError, buildExport, filename, download = downloadJson, extraFields, extraTabs = [], preview, libraryName = 'dungeon-theme-library', includePiece=true,includeContent=true,includeEncounters=true,itemSummary,contentKinds=CONTENT_KINDS, noun='テーマ',
 }: {
   editor: LibraryEditorState<D,T,F>; library: ReturnType<typeof useThemeMaterials>; title: string; validError: string;
   buildExport: (values:T[],single:boolean) => unknown; filename:(name:string) => string; download?:typeof downloadJson;
   extraFields?:ReactNode; extraTabs?:{id:string;title:string;content:ReactNode}[]; preview?:ReactNode;
-  libraryName?:string; includePiece?:boolean; contentKinds?:readonly ContentKind[]; noun?:string;
+  libraryName?:string; includePiece?:boolean;includeContent?:boolean;includeEncounters?:boolean;itemSummary?:(item:T)=>ReactNode; contentKinds?:readonly ContentKind[]; noun?:string;
 }) {
   const { form, baseline } = editor.entry;
   const file = useRef<HTMLInputElement>(null);
@@ -67,11 +68,11 @@ export function ThemeEditorWorkbench<D extends BaseDraft, T extends D & { create
       <p>{filtered.length}件 / 全{editor.items.length}件</p>
       {filtered.slice(actualPage * 50, (actualPage + 1) * 50).map(t => <article key={t.id}><label><input type="checkbox" aria-label={`${t.name}（${t.id}）を出力選択`} checked={selected.has(t.id)} onChange={e => setSelected(previous => {
         const next = new Set(previous); if (e.target.checked) next.add(t.id); else next.delete(t.id); return next;
-      })} />出力選択</label><button className="content-item" aria-pressed={form.theme.id === t.id} onClick={() => editor.select(t.id)}><strong>{t.name}</strong><p>{t.genre} / {t.category}</p>{'purpose' in t && <p>{String(t.purpose)}</p>}<p>{t.summary}</p><p>{t.tags.join(', ')}</p><small>{t.id}</small></button></article>)}
+      })} />出力選択</label><button className="content-item" aria-pressed={form.theme.id === t.id} onClick={() => editor.select(t.id)}><strong>{t.name}</strong><p>{t.genre} / {t.category}</p>{'purpose' in t && <p>{String(t.purpose)}</p>}<p>{t.summary}</p>{itemSummary?.(t)}<p>{t.tags.join(', ')}</p><small>{t.id}</small></button></article>)}
       <button disabled={!actualPage} onClick={() => setPage(actualPage - 1)}>前の50件</button><button disabled={(actualPage + 1) * 50 >= filtered.length} onClick={() => setPage(actualPage + 1)}>次の50件</button>
     </aside><section className="content-properties" aria-label={`${noun}の編集`}>
-      <p>{noun==='テーマ'?'Theme':'Faction'} ID: {form.theme.id}</p>{baseline && <p>作成: {baseline.createdAt} / 更新: {baseline.updatedAt}</p>}
-      <nav>{[['basic','基本情報'],['markdown','Markdown'],...(includePiece?[['piece','Piece候補']]:[]),['content',includePiece?'Content候補':'構成員候補'],...extraTabs.map(t => [t.id,t.title]),['preview','候補プレビュー']].map(([id, title]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{title}</button>)}</nav>
+      <p>{noun==='テーマ'?'Theme':noun==='勢力'?'Faction':noun} ID: {form.theme.id}</p>{baseline && <p>作成: {baseline.createdAt} / 更新: {baseline.updatedAt}</p>}
+      <nav>{[['basic','基本情報'],['markdown','Markdown'],...(includePiece?[['piece','Piece候補']]:[]),...(includeContent?[["content",includePiece?'Content候補':'構成員候補']]:[]),...(includeEncounters?[["encounters","Encounter候補"]]:[]),...extraTabs.map(t => [t.id,t.title]),['preview','候補プレビュー']].map(([id, title]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{title}</button>)}</nav>
       <div hidden={tab !== 'basic'}>
         {([['name',`${noun}名称`,THEME_LIMITS.name],['genre','ジャンル',THEME_LIMITS.classification],['category','施設分類',THEME_LIMITS.classification],['summary',`${noun}概要`,THEME_LIMITS.summary]] as const).map(([field,label,max]) => <label key={field}>{label}<input aria-label={label} maxLength={max} value={form.theme[field]} onChange={e => patch({ [field]: e.target.value } as Partial<D>)} /></label>)}
         <label>{noun}タグ（カンマ区切り）<input aria-label={`${noun}タグ`} value={form.tagsText} onChange={e => editor.changeForm(f => ({ ...f, tagsText: e.target.value }))} /></label>
@@ -81,6 +82,7 @@ export function ThemeEditorWorkbench<D extends BaseDraft, T extends D & { create
       <div hidden={tab !== 'piece'}><PolicyEditor label="Piece" policy={form.piece} onChange={p => patchPolicy('piece',p)} openPicker={excluded => openPicker('piece',excluded)} /></div>
       <div hidden={tab !== 'content'}><nav>{contentKinds.map(k => <button key={k} aria-pressed={kind === k} onClick={() => setKind(k)}>{CONTENT_LABELS[k]}</button>)}</nav>
         <PolicyEditor label={CONTENT_LABELS[kind]} policy={form.content[kind]} onChange={p => patchPolicy(kind,p)} openPicker={excluded => openPicker(kind,excluded)} /></div>
+      {includeEncounters&&<div hidden={tab!=='encounters'}><EncounterSelectionEditor policy={form.encounters} onChange={patch=>editor.changeForm(f=>({...f,encounters:{...f.encounters,...patch}}))} /></div>}
       {extraTabs.map(t => <div key={t.id} hidden={tab !== t.id}>{t.content}</div>)}
       <div hidden={tab !== 'preview'}>{library.error && <p role="alert">{library.error}</p>}<button onClick={() => void library.reload()}>素材一覧を再取得</button>
         {preview ?? (!library.ready ? <p>素材一覧を読み込んでいます…</p> : policies.value ? <ThemeCandidatePreview {...policies.value} pieces={library.pieces} contents={library.contents} /> : <p role="alert">{policies.error}</p>)}</div>

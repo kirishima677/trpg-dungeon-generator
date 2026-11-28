@@ -8,7 +8,7 @@ const escapeHtml = (value: string) => value.replaceAll('&', '&amp;').replaceAll(
   .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 const heading = (room: ScenarioGuideRoom) => [room.number, room.name].filter((value): value is string => Boolean(value)).map(escapeHtml).join('. ');
 
-function renderEntities(room: ScenarioGuideRoom, markdown: (value: string) => string, gm: boolean) {
+function renderEntities(room: Pick<ScenarioGuideRoom,'entities'|'entityDescriptions'>, markdown: (value: string) => string, gm: boolean) {
   if (!gm) return (room.entityDescriptions ?? []).map(description => markdown(description)).join('');
   return (room.entities ?? []).map(group => `<section><h4>${CONTENT_LABELS[group.kind]}</h4>${group.entries.map(entity => `<section><h5>${escapeHtml(entity.name)} × ${entity.quantity}</h5>
 <p>元の素材: ${escapeHtml(entity.sourceName)}</p>${entity.summary ? `<p>${escapeHtml(entity.summary)}</p>` : ''}
@@ -18,6 +18,11 @@ ${Object.keys(entity.attributes).length ? `<table><thead><tr><th>属性</th><th>
 ${entity.definitionGmNotes ? `<section class="gm-notes"><h6>素材のGM情報</h6>${markdown(entity.definitionGmNotes)}</section>` : ''}
 ${entity.publicDescription ? `<section><h6>配置固有の公開説明</h6>${markdown(entity.publicDescription)}</section>` : ''}
 ${entity.gmNotes ? `<section class="gm-notes"><h6>配置固有のGM情報</h6>${markdown(entity.gmNotes)}</section>` : ''}</section>`).join('')}</section>`).join('');
+}
+
+function renderEncounters(room:ScenarioGuideRoom,markdown:(v:string)=>string,gm:boolean) {
+ if(!gm)return (room.encounterDescriptions??[]).map(markdown).join('');
+ return (room.encounters??[]).map(e=>`<section><h4>Encounter: ${escapeHtml(e.name)}</h4>${([['背景',e.background],['現在の状況',e.situation],['目的',e.objectives],['テンプレートのGM情報',e.definitionGmNotes],['EncounterのGM情報',e.gmNotes]] as const).filter(([,v])=>v).map(([label,v])=>`<h5>${label}</h5>${markdown(v!)}`).join('')}${e.bindings.length?`<h5>参加勢力</h5><ul>${e.bindings.map(b=>`<li>${escapeHtml(b.role)}: ${escapeHtml(b.name)}</li>`).join('')}</ul>`:''}${renderEntities(e,markdown,true)}${e.diagnostics?.length?`<details><summary>制作上の診断</summary><ul>${e.diagnostics.map(w=>`<li>${escapeHtml(w)}</li>`).join('')}</ul></details>`:''}</section>`).join('');
 }
 
 /** The renderer sees only previously filtered content. mapSvg comes from our SVG renderer. */
@@ -37,10 +42,10 @@ ${guide.mapSvg ? '<li><a href="#guide-map">ダンジョンマップ</a></li>' : 
     return [`<article>${publicPart}${privatePart}</article>`];
   });
   const factions=factionSections.length?`<section id="guide-factions"><h2>勢力</h2>${factionSections.join('')}</section>`:'';
-  const rooms = guide.rooms.map(room => `<article id="${room.anchorId}" class="room-guide${!room.entities?.length && !room.entityDescriptions?.length && [room.description, room.gmNotes, ...(room.tags ?? []),...(guide.audience==='gm'&&room.factionControl?Object.values(room.factionControl):[])].join('').length <= 800 ? ' room-guide--short' : ''}"><h3>${heading(room)}</h3>
+  const rooms = guide.rooms.map(room => `<article id="${room.anchorId}" class="room-guide${!room.entities?.length && !room.entityDescriptions?.length && !room.encounters?.length && !room.encounterDescriptions?.length && [room.description, room.gmNotes, ...(room.tags ?? []),...(guide.audience==='gm'&&room.factionControl?Object.values(room.factionControl):[])].join('').length <= 800 ? ' room-guide--short' : ''}"><h3>${heading(room)}</h3>
 ${guide.audience==='gm'&&room.factionControl?`<section><h4>勢力の支配状態</h4><p>${escapeHtml(room.factionControl.status)}</p>${room.factionControl.currentUse?markdown(room.factionControl.currentUse):''}${room.factionControl.gmNotes?markdown(room.factionControl.gmNotes):''}</section>`:''}${room.description ? `<section><h4>公開説明</h4>${markdown(room.description)}</section>` : ''}
 ${room.gmNotes ? `<section class="gm-notes"><h4>GM専用情報</h4>${markdown(room.gmNotes)}</section>` : ''}
-${room.tags?.length ? `<p class="tags"><strong>タグ:</strong> ${room.tags.map(escapeHtml).join(', ')}</p>` : ''}${renderEntities(room, markdown, guide.audience === 'gm')}</article>`).join('');
+${room.tags?.length ? `<p class="tags"><strong>タグ:</strong> ${room.tags.map(escapeHtml).join(', ')}</p>` : ''}${renderEntities(room, markdown, guide.audience === 'gm')}${renderEncounters(room,markdown,guide.audience==='gm')}</article>`).join('');
   const label = guide.audience === 'gm' ? 'GM用シナリオガイド' : 'プレイヤー用シナリオガイド';
   const html = `<!DOCTYPE html>
 <html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="referrer" content="no-referrer">
